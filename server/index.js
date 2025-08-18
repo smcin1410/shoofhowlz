@@ -297,7 +297,12 @@ io.on('connection', (socket) => {
   // Handle draft start
   socket.on('start-draft', (draftConfig) => {
     console.log('Starting draft with configuration:', draftConfig);
-    
+
+    if (draftState.adminPassword && draftState.adminPassword !== draftConfig.adminPassword) {
+      socket.emit('password-required');
+      return;
+    }
+
     const { leagueName, leagueSize, draftType, tokens, timeClock, totalRounds, teams, adminPassword } = draftConfig;
     
     // Store draft configuration

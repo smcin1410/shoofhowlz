@@ -115,8 +115,16 @@ const MainApp = () => {
     // Listen for error messages
     newSocket.on('error', (errorMessage) => {
       setError(errorMessage);
+      alert(errorMessage);
       // Clear error after 5 seconds
       setTimeout(() => setError(null), 5000);
+    });
+
+    newSocket.on('password-required', () => {
+      const password = window.prompt("Admin password required to start the draft. Please enter the password:");
+      if (password) {
+        socket.emit('start-draft', { ...draftState, adminPassword: password });
+      }
     });
 
     return () => {
