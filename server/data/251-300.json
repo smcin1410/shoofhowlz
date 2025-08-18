@@ -1,0 +1,1414 @@
+[
+  {
+    "rank": 251,
+    "player_name": "Ollie Gordon II",
+    "team": "Miami Dolphins",
+    "position": "RB",
+    "status": null,
+    "statistics_2024": {
+      "CAR": null,
+      "YDS": null,
+      "AVG": null,
+      "TD": null,
+      "REC": null,
+      "YDS": null,
+      "TD": null,
+      "FPTS": null
+    },
+    "projections_2025": {
+      "CAR": 40,
+      "YDS": 167,
+      "AVG": 4.2,
+      "TD": 1,
+      "REC": 5,
+      "YDS": 33,
+      "TD": 0,
+      "FPTS": 33.45
+    },
+    "outlook_2025": "Gordon was selected by Miami in the sixth round of April's draft. He is one of the largest RBs in this class (6-foot-1 and 226 pounds, with a class-high 80-inch wingspan). He had a rough 2024 in tough circumstances (4.63 YPC, third worst in this class), but was much better as a rusher and receiver during a productive 2023 campaign. He's not super-fast or dynamic, but he's young and a solid producer. Gordon will battle Jaylen Wright for No. 2 duties behind De'Von Achane. He's a name to watch, but is a long shot for 2025 fantasy production."
+  },
+  {
+    "rank": 252,
+    "player_name": "Noah Brown",
+    "team": "Washington Commanders",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 56,
+      "REC": 35,
+      "YDS": 453,
+      "AVG": 12.9,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 86.3
+    },
+    "projections_2025": {
+      "TAR": 48,
+      "REC": 30,
+      "YDS": 365,
+      "AVG": 12.1,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 76.55
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 253,
+    "player_name": "Allen Lazard",
+    "team": "New York Jets",
+    "position": "WR",
+    "status": "Questionable",
+    "statistics_2024": {
+      "TAR": 60,
+      "REC": 37,
+      "YDS": 530,
+      "AVG": 14.3,
+      "TD": 6,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 126.0
+    },
+    "projections_2025": {
+      "TAR": 46,
+      "REC": 28,
+      "YDS": 351,
+      "AVG": 12.7,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 72.91
+    },
+    "outlook_2025": "Lazard is entering his eighth NFL season, including his third with the Jets. With old friend Aaron Rodgers under center, Lazard came out of the gate strong last season, totaling a 26-354-5 receiving line (15.2 fantasy PPG) in his first six games. Once the Jets acquired Davante Adams, however, Lazard's usage plummeted and he managed an 11-176-1 line (5.8 PPG) in his final six games. Lazard has a shot at No. 2 WR duties opposite Garrett Wilson this season, but with Rodgers out and dual-threat Justin Fields in at quarterback, there's almost no upside here. Lazard has never posted a top-30 fantasy campaign (one finish better than 47th) and he's unlikely to get there in his age-29 season."
+  },
+  {
+    "rank": 254,
+    "player_name": "Cardinals D/ST",
+    "team": "Arizona Cardinals",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 41,
+      "INT": 9,
+      "FR": 8,
+      "TD": 1,
+      "PA": 373,
+      "YA": 5823,
+      "FPTS": 114.8
+    },
+    "projections_2025": {
+      "SCK": 41,
+      "INT": 13,
+      "FR": 7,
+      "TD": 2,
+      "PA": 371,
+      "YA": 5872,
+      "FPTS": 139.83
+    },
+    "outlook_2025": "Fantasy managers piecing a D/ST strategy together could do worse than the Cardinals, who beefed up their defensive line with the signings of DE Josh Sweat and DT Calais Campbell, and face one of the league's most favorable early schedules. Their Weeks 1 and 2 matchups are a dream (@NO, CAR), and they're in similarly good shape through Week 6. Regard the Cardinals as a strong streaming candidate, with the possibility of the unit developing into something more as the season plays out."
+  },
+  {
+    "rank": 255,
+    "player_name": "Packers D/ST",
+    "team": "Green Bay Packers",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 45,
+      "INT": 17,
+      "FR": 14,
+      "TD": 1,
+      "PA": 326,
+      "YA": 5347,
+      "FPTS": 161.0
+    },
+    "projections_2025": {
+      "SCK": 40,
+      "INT": 12,
+      "FR": 9,
+      "TD": 2,
+      "PA": 389,
+      "YA": 5994,
+      "FPTS": 125.81
+    },
+    "outlook_2025": "In his first season as defensive coordinator, Jeff Hafley squeezed a lot from this unit, which finished third in the league in fantasy points (8.2 per game). All-Pro S Xavier McKinney, LB Edgerrin Cooper and DE Rashan Gary return to comprise the heart of the Packers' defense, which, due to a lack of cornerback depth, should be susceptible to the matchups. The opening two weeks are ones to avoid (DET, WAS), but the season's middle chunks should provide fantasy managers opportunities."
+  },
+  {
+    "rank": 256,
+    "player_name": "Brandon McManus",
+    "team": "Green Bay Packers",
+    "position": "K",
+    "status": null,
+    "statistics_2024": {
+      "1-39": "14/14",
+      "40-49": "3/4",
+      "50+": "3/3",
+      "TOT": "20/21",
+      "XP": "30/30",
+      "FPTS": 98.0
+    },
+    "projections_2025": {
+      "1-39": "16/17",
+      "40-49": "7/9",
+      "50+": "5/7",
+      "TOT": "28/33",
+      "XP": "40/42",
+      "FPTS": 135.63
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 257,
+    "player_name": "Evan McPherson",
+    "team": "Cincinnati Bengals",
+    "position": "K",
+    "status": null,
+    "statistics_2024": {
+      "1-39": "10/10",
+      "40-49": "3/5",
+      "50+": "3/7",
+      "TOT": "16/22",
+      "XP": "37/38",
+      "FPTS": 88.0
+    },
+    "projections_2025": {
+      "1-39": "16/17",
+      "40-49": "7/9",
+      "50+": "5/7",
+      "TOT": "27/33",
+      "XP": "43/47",
+      "FPTS": 136.11
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 258,
+    "player_name": "Elijah Arroyo",
+    "team": "Seattle Seahawks",
+    "position": "TE",
+    "status": null,
+    "statistics_2024": {
+      "TAR": null,
+      "REC": null,
+      "YDS": null,
+      "AVG": null,
+      "TD": null,
+      "CAR": null,
+      "RUSH_YDS": null,
+      "RUSH_TD": null,
+      "FPTS": null
+    },
+    "projections_2025": {
+      "TAR": 74,
+      "REC": 50,
+      "YDS": 562,
+      "AVG": 11.2,
+      "TD": 4,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 127.81
+    },
+    "outlook_2025": "Arroyo was selected by Seattle in the second round of April's draft. A seam stretcher, Arroyo's 10.0 aDOT last season at Miami ranked second and his 16.9 YPR and 12.6 YPT first in this TE class. He also led this class in YPR, YPT, RAC and adjusted catch rate for his career. Incredibly, Arroyo is charted as having zero career drops. The important context here is that Arroyo was a rarely used target (61 in 34 games, 47 of which came in 2024). He has long-term fantasy upside, but will open his career battling second-year A.J. Barner for work. Arroyo is the better pass-catching prospect of the two, so he's a sleeper to consider in the late rounds of deep leagues."
+  },
+  {
+    "rank": 259,
+    "player_name": "Mike Gesicki",
+    "team": "Cincinnati Bengals",
+    "position": "TE",
+    "status": "Questionable",
+    "statistics_2024": {
+      "TAR": 83,
+      "REC": 65,
+      "YDS": 665,
+      "AVG": 10.2,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 141.5
+    },
+    "projections_2025": {
+      "TAR": 67,
+      "REC": 49,
+      "YDS": 454,
+      "AVG": 9.2,
+      "TD": 4,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 115.46
+    },
+    "outlook_2025": "Gesicki re-signed with the Bengals after a strong finish to his first year with the team. After falling completely off the fantasy radar the prior two seasons, Gesicki finished top 15 in routes, targets, catches, yardage and end zone targets in 2024. He struggled to find the end zone (exactly two TDs for the third time in four seasons), but finished 18th in fantasy PPG. Gesicki was boom/bust (four games with 14-plus points, but 11 with 9 points or fewer), but he peaked late with position-best marks in targets (22), catches (18), receiving yards (154) and fantasy points (33.4) during Weeks 17 and 18. Gesicki is a situational player and will need to fend off newcomer Noah Fant, but he will benefit from Joe Burrow and the league's pass-heaviest offense. He's a bench option in deep leagues."
+  },
+  {
+    "rank": 260,
+    "player_name": "Tyler Higbee",
+    "team": "Los Angeles Rams",
+    "position": "TE",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 12,
+      "REC": 8,
+      "YDS": 66,
+      "AVG": 8.3,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 26.6
+    },
+    "projections_2025": {
+      "TAR": 74,
+      "REC": 52,
+      "YDS": 483,
+      "AVG": 9.3,
+      "TD": 4,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 124.11
+    },
+    "outlook_2025": "Higbee is set for his 10th NFL season (all with the Rams) after missing most of 2024 while recovering from a torn ACL and MCL suffered during the 2023 playoffs. Higbee made his season debut in Week 16 and went on to appear in five games, including the playoffs. Unsurprisingly, he didn't play much of a role initially, but he seemed back to his usual self in the playoff game against the Eagles, posting a 7-54-1 receiving line on 10 targets. Higbee has enjoyed spurts of fantasy relevance at times throughout his career, but he's never finished better than 10th in PPG, and even that was way back in 2019. The 32-year-old will settle in no higher than third in target priority behind Puka Nacua and Davante Adams, so he's not worth your attention in the late rounds."
+  },
+  {
+    "rank": 261,
+    "player_name": "Alec Pierce",
+    "team": "Indianapolis Colts",
+    "position": "WR",
+    "status": "Questionable",
+    "statistics_2024": {
+      "TAR": 69,
+      "REC": 37,
+      "YDS": 824,
+      "AVG": 22.3,
+      "TD": 7,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 161.4
+    },
+    "projections_2025": {
+      "TAR": 47,
+      "REC": 25,
+      "YDS": 355,
+      "AVG": 14.3,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 72.41
+    },
+    "outlook_2025": "Pierce is entering his fourth NFL season. In 12 games in which Michael Pittman Jr. and Josh Downs were also active last season, Pierce handled 12% of the targets (3.8 per game) and cleared five in a game only once. If we filter to the six games played with Anthony Richardson, Pittman and Downs, Pierce averaged 3.8 targets and 4.4 fantasy points per game, failing to score a TD or clear 10.4 fantasy points in any of the outings. No higher than third on the WR depth chart and a candidate for less work as Adonai Mitchell enters Year 2 and with TE Tyler Warren now in the mix, Pierce is way off the fantasy radar."
+  },
+  {
+    "rank": 262,
+    "player_name": "KaVontae Turpin",
+    "team": "Dallas Cowboys",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 52,
+      "REC": 31,
+      "YDS": 420,
+      "AVG": 13.5,
+      "TD": 2,
+      "CAR": 16,
+      "RUSH_YDS": 92,
+      "RUSH_TD": 0,
+      "FPTS": 104.2
+    },
+    "projections_2025": {
+      "TAR": 32,
+      "REC": 20,
+      "YDS": 257,
+      "AVG": 12.9,
+      "TD": 2,
+      "CAR": 12,
+      "RUSH_YDS": 76,
+      "RUSH_TD": 0,
+      "FPTS": 71.52
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 263,
+    "player_name": "Andrei Iosivas",
+    "team": "Cincinnati Bengals",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 61,
+      "REC": 36,
+      "YDS": 479,
+      "AVG": 13.3,
+      "TD": 6,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 119.9
+    },
+    "projections_2025": {
+      "TAR": 43,
+      "REC": 26,
+      "YDS": 303,
+      "AVG": 11.7,
+      "TD": 3,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 71.22
+    },
+    "outlook_2025": "Iosivas is entering his third NFL season after working as a situational target during his first two campaigns. The 2023 sixth-round pick posted a 15-116-4 receiving line while playing 26% of the snaps as a rookie prior to leaping to a 78% snap share in 2024. Despite the generous playing time in the league's pass-heaviest offense, as well as several missed games by Tee Higgins, Iosivas cleared five targets only twice (Weeks 1 and 3) and averaged just 7.1 fantasy PPG. The 25-year-old finished last among 88 qualified wide receivers in YPRR (0.9) and, even if he fends off second-year Jermaine Burton for No. 3 duties, he'll be a minimal threat for consistent targets. Iosivas shouldn't be drafted."
+  },
+  {
+    "rank": 264,
+    "player_name": "Jalen Tolbert",
+    "team": "Dallas Cowboys",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 79,
+      "REC": 49,
+      "YDS": 610,
+      "AVG": 12.4,
+      "TD": 7,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 152.0
+    },
+    "projections_2025": {
+      "TAR": 41,
+      "REC": 25,
+      "YDS": 299,
+      "AVG": 11.7,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 69.82
+    },
+    "outlook_2025": "Tolbert is back in Dallas for his fourth NFL season. A situational player during his first two campaigns, Tolbert played 76% of Dallas' offensive snaps in 2025. That didn't translate to much usage, however, as he averaged just 4.6 targets per game. Tolbert scored seven TDs, but ranked outside the top 50 receivers in targets, catches, yards and fantasy PPG. The 26-year-old will play a lesser role in 2025 after Dallas added George Pickens as the team's No. 2 receiver behind superstar CeeDee Lamb. Even with a healthy Dak Prescott, Tolbert is a poor bet to come close to weekly flex production."
+  },
+  {
+    "rank": 265,
+    "player_name": "Sean Tucker",
+    "team": "Tampa Bay Buccaneers",
+    "position": "RB",
+    "status": null,
+    "statistics_2024": {
+      "CAR": 50,
+      "YDS": 308,
+      "AVG": 6.2,
+      "TD": 2,
+      "REC": 9,
+      "YDS": 109,
+      "TD": 1,
+      "FPTS": 68.7
+    },
+    "projections_2025": {
+      "CAR": 31,
+      "YDS": 139,
+      "AVG": 4.4,
+      "TD": 1,
+      "REC": 4,
+      "YDS": 31,
+      "TD": 0,
+      "FPTS": 28.18
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 266,
+    "player_name": "Keaton Mitchell",
+    "team": "Baltimore Ravens",
+    "position": "RB",
+    "status": "Questionable",
+    "statistics_2024": {
+      "CAR": 15,
+      "YDS": 30,
+      "AVG": 2.0,
+      "TD": 0,
+      "REC": 1,
+      "YDS": 28,
+      "TD": 0,
+      "FPTS": 6.8
+    },
+    "projections_2025": {
+      "CAR": 36,
+      "YDS": 165,
+      "AVG": 4.5,
+      "TD": 1,
+      "REC": 2,
+      "YDS": 13,
+      "TD": 0,
+      "FPTS": 27.38
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 267,
+    "player_name": "Sam Darnold",
+    "team": "Seattle Seahawks",
+    "position": "QB",
+    "status": null,
+    "statistics_2024": {
+      "C/A": "361/545",
+      "YDS": 4319,
+      "TD": 35,
+      "INT": 12,
+      "CAR": 67,
+      "RUSH_YDS": 212,
+      "RUSH_TD": 1,
+      "FPTS": 377.0
+    },
+    "projections_2025": {
+      "C/A": "363/557",
+      "YDS": 3956,
+      "TD": 22,
+      "INT": 14,
+      "CAR": 65,
+      "RUSH_YDS": 221,
+      "RUSH_TD": 2,
+      "FPTS": 288.85
+    },
+    "outlook_2025": "Darnold signed with Seattle after enjoying a breakout 2024 campaign in Minnesota. Playing with the lead often (league-high 53% of plays) in Kevin O'Connell's QB-friendly scheme, Darnold finished top 10 among QBs in pass attempts, completions, pass yards, pass TDs, INTs, sacks and carries. He had multiple TD passes in 12 games and had a solid fantasy floor with 16-plus points in 12 games. Despite the big box score numbers, Darnold finished \"only\" 18th in QBR and isn't going to move the needle much with his legs (career high in rush yards is 222), so it's fair to expect a step back in a Klint Kubiak-led offense that swapped out DK Metcalf and Tyler Lockett for Cooper Kupp and Marquez Valdes-Scantling. Darnold is best valued as a fringe QB2 with minimal upside."
+  },
+  {
+    "rank": 268,
+    "player_name": "Aaron Rodgers",
+    "team": "Pittsburgh Steelers",
+    "position": "QB",
+    "status": null,
+    "statistics_2024": {
+      "C/A": "368/584",
+      "YDS": 3897,
+      "TD": 28,
+      "INT": 11,
+      "CAR": 22,
+      "RUSH_YDS": 107,
+      "RUSH_TD": 0,
+      "FPTS": 311.1
+    },
+    "projections_2025": {
+      "C/A": "370/562",
+      "YDS": 3875,
+      "TD": 21,
+      "INT": 11,
+      "CAR": 31,
+      "RUSH_YDS": 112,
+      "RUSH_TD": 1,
+      "FPTS": 273.31
+    },
+    "outlook_2025": "Rodgers signed with the Steelers and, though he will be the team's starter in 2025, he is unlikely to provide starting-caliber fantasy numbers, as at age 41, his high fantasy upside is a thing of the past. After posting zero weekly finishes better than ninth in his prior most recent full season (2022), he managed one finish better than eighth in 2024. He's still able to put up passing numbers (top 8 in attempts, yards and TDs last season), but is a nonfactor with his legs (107 rushing yards last season was actually his highest since 2020). In Pittsburgh, Rodgers will be working in Arthur Smith's run-heavy scheme with a shaky supporting cast. He's well off the fantasy radar."
+  },
+  {
+    "rank": 269,
+    "player_name": "Russell Wilson",
+    "team": "New York Giants",
+    "position": "QB",
+    "status": null,
+    "statistics_2024": {
+      "C/A": "214/336",
+      "YDS": 2482,
+      "TD": 16,
+      "INT": 5,
+      "CAR": 43,
+      "RUSH_YDS": 155,
+      "RUSH_TD": 2,
+      "FPTS": 203.9
+    },
+    "projections_2025": {
+      "C/A": "168/265",
+      "YDS": 1902,
+      "TD": 9,
+      "INT": 5,
+      "CAR": 30,
+      "RUSH_YDS": 119,
+      "RUSH_TD": 1,
+      "FPTS": 137.88
+    },
+    "outlook_2025": "Wilson signed with the Giants following a one-year stint in Pittsburgh. In 11 starts for the Steelers, he averaged 15.7 fantasy PPG and managed only two weekly finishes better than 10th. Wilson remained serviceable as a passer -- he now has 42 pass TDs to 13 INTs over the past two seasons (26 games) -- but wasn't much of a factor with his legs (career-low 155 yards). Wilson finished 15th in fantasy PPG, which marks his fourth straight season outside the top 12. The 36-year-old has Malik Nabers at his disposal, which will help keep him in the weekly QB2 conversation, but there's simply not much upside here and he could eventually cede his job to rookie Jaxson Dart."
+  },
+  {
+    "rank": 270,
+    "player_name": "Tyler Shough",
+    "team": "New Orleans Saints",
+    "position": "QB",
+    "status": null,
+    "statistics_2024": {
+      "C/A": null,
+      "YDS": null,
+      "TD": null,
+      "INT": null,
+      "CAR": null,
+      "RUSH_YDS": null,
+      "RUSH_TD": null,
+      "FPTS": null
+    },
+    "projections_2025": {
+      "C/A": "233/376",
+      "YDS": 2581,
+      "TD": 12,
+      "INT": 10,
+      "CAR": 40,
+      "RUSH_YDS": 173,
+      "RUSH_TD": 2,
+      "FPTS": 174.84
+    },
+    "outlook_2025": "Shough was selected by the Saints in the second round of April's draft. He is the oldest QB in this rookie class (25), having spent his seven collegiate seasons at Oregon, Texas Tech and Louisville. He completed only 63% of his passes last season and for his career, but has a big frame, good arm and adds some value with his legs (career 196-1,109-11 line). Following Derek Carr's shocking retirement in May, Shough is likely to slide in as the Saints' starting quarterback. Even if he wins that job and despite a decent WR trio (Chris Olave, Rashid Shaheed, Brandin Cooks), Shough is unlikely to emerge as a consistent fantasy option in an offense that is expected to struggle in 2025. Shough should only be selected late in superflex leagues."
+  },
+  {
+    "rank": 271,
+    "player_name": "Jaylin Noel",
+    "team": "Houston Texans",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": null,
+      "REC": null,
+      "YDS": null,
+      "AVG": null,
+      "TD": null,
+      "CAR": null,
+      "RUSH_YDS": null,
+      "RUSH_TD": null,
+      "FPTS": null
+    },
+    "projections_2025": {
+      "TAR": 38,
+      "REC": 24,
+      "YDS": 305,
+      "AVG": 12.5,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 65.32
+    },
+    "outlook_2025": "Noel was selected by Houston in the third round of April's draft. He has a below-average frame with small hands and short arms, but that didn't stop him from showing well at the combine, where he tied for the highest vertical (41.5) and posted the longest broad jump (131). Primarily a short-range (8.0 aDOT) slot receiver (71%), Noel also worked as a kick and punt returner at Iowa State. Even with Tank Dell unlikely to play this season, Noel will need to battle Christian Kirk, Justin Watson and second-round rookie Jayden Higgins for work behind Nico Collins. He's a long shot for consistent rookie-season production, but is a fine dynasty stash."
+  },
+  {
+    "rank": 272,
+    "player_name": "Jalen Coker",
+    "team": "Carolina Panthers",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 46,
+      "REC": 32,
+      "YDS": 478,
+      "AVG": 14.9,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 92.4
+    },
+    "projections_2025": {
+      "TAR": 39,
+      "REC": 25,
+      "YDS": 295,
+      "AVG": 11.9,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 64.48
+    },
+    "outlook_2025": "Coker is entering his second NFL season after impressing as an undrafted free-agent signing in 2024. Coker stepped into a substantial offensive role in Week 5 and his route participation cleared 50% in each of his next 10 games. He handled a 16% target share (4.6 per game) from that point forward and averaged 9.3 fantasy PPG. He did nearly all of his damage with Adam Thielen or Xavier Legette sidelined, but did flash at times nonetheless, reaching 14 fantasy points three times. Coker figures to open 2025 behind first-round pick Tetairoa McMillan, Thielen and Legette on the depth chart, so despite his strong showing as a rookie UDFA, he's a long shot for fantasy value barring an injury or two above him on the depth chart."
+  },
+  {
+    "rank": 273,
+    "player_name": "Tre Tucker",
+    "team": "Las Vegas Raiders",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 81,
+      "REC": 47,
+      "YDS": 539,
+      "AVG": 11.5,
+      "TD": 3,
+      "CAR": 9,
+      "RUSH_YDS": 44,
+      "RUSH_TD": 1,
+      "FPTS": 129.3
+    },
+    "projections_2025": {
+      "TAR": 34,
+      "REC": 21,
+      "YDS": 281,
+      "AVG": 13.6,
+      "TD": 1,
+      "CAR": 8,
+      "RUSH_YDS": 47,
+      "RUSH_TD": 0,
+      "FPTS": 62.97
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 274,
+    "player_name": "Van Jefferson",
+    "team": "Tennessee Titans",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 40,
+      "REC": 24,
+      "YDS": 276,
+      "AVG": 11.5,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 63.6
+    },
+    "projections_2025": {
+      "TAR": 38,
+      "REC": 21,
+      "YDS": 286,
+      "AVG": 13.5,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 61.66
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 275,
+    "player_name": "Greg Dortch",
+    "team": "Arizona Cardinals",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 50,
+      "REC": 37,
+      "YDS": 342,
+      "AVG": 9.2,
+      "TD": 3,
+      "CAR": 5,
+      "RUSH_YDS": 31,
+      "RUSH_TD": 0,
+      "FPTS": 90.3
+    },
+    "projections_2025": {
+      "TAR": 32,
+      "REC": 23,
+      "YDS": 239,
+      "AVG": 10.3,
+      "TD": 1,
+      "CAR": 4,
+      "RUSH_YDS": 28,
+      "RUSH_TD": 0,
+      "FPTS": 59.66
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 276,
+    "player_name": "Devin Neal",
+    "team": "New Orleans Saints",
+    "position": "RB",
+    "status": "Questionable",
+    "statistics_2024": {
+      "CAR": null,
+      "YDS": null,
+      "AVG": null,
+      "TD": null,
+      "REC": null,
+      "YDS": null,
+      "TD": null,
+      "FPTS": null
+    },
+    "projections_2025": {
+      "CAR": 33,
+      "YDS": 140,
+      "AVG": 4.2,
+      "TD": 1,
+      "REC": 4,
+      "YDS": 29,
+      "TD": 0,
+      "FPTS": 27.05
+    },
+    "outlook_2025": "Neal was selected by the Saints in the sixth round of April's draft. He isn't super-fast (4.58 40-yard dash, 1.59 10-yard split), but has decent size and was a solid producer during four seasons at Kansas. That tenure included 760 carries (second most in this class), the second-best elusiveness rating and solid receiving efficiency on 102 targets. Neal is a long shot for fantasy relevance, but the Saints' backup situation seems wide open behind 30-year-old Alvin Kamara. If Neal can overtake Kendre Miller and Clyde Edwards-Helaire for the No. 2 job, he'll have some sneaky insurance appeal."
+  },
+  {
+    "rank": 277,
+    "player_name": "Kyle Juszczyk",
+    "team": "San Francisco 49ers",
+    "position": "RB",
+    "status": "Questionable",
+    "statistics_2024": {
+      "CAR": 5,
+      "YDS": 26,
+      "AVG": 5.2,
+      "TD": 1,
+      "REC": 19,
+      "YDS": 200,
+      "TD": 2,
+      "FPTS": 57.6
+    },
+    "projections_2025": {
+      "CAR": 4,
+      "YDS": 18,
+      "AVG": 4.2,
+      "TD": 0,
+      "REC": 12,
+      "YDS": 95,
+      "TD": 0,
+      "FPTS": 27.01
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 278,
+    "player_name": "Emari Demercado",
+    "team": "Arizona Cardinals",
+    "position": "RB",
+    "status": null,
+    "statistics_2024": {
+      "CAR": 24,
+      "YDS": 223,
+      "AVG": 9.3,
+      "TD": 1,
+      "REC": 16,
+      "YDS": 104,
+      "TD": 0,
+      "FPTS": 54.7
+    },
+    "projections_2025": {
+      "CAR": 13,
+      "YDS": 61,
+      "AVG": 4.5,
+      "TD": 0,
+      "REC": 10,
+      "YDS": 69,
+      "TD": 0,
+      "FPTS": 26.89
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 279,
+    "player_name": "Kyle Monangai",
+    "team": "Chicago Bears",
+    "position": "RB",
+    "status": null,
+    "statistics_2024": {
+      "CAR": null,
+      "YDS": null,
+      "AVG": null,
+      "TD": null,
+      "REC": null,
+      "YDS": null,
+      "TD": null,
+      "FPTS": null
+    },
+    "projections_2025": {
+      "CAR": 35,
+      "YDS": 143,
+      "AVG": 4.1,
+      "TD": 1,
+      "REC": 2,
+      "YDS": 14,
+      "TD": 0,
+      "FPTS": 26.02
+    },
+    "outlook_2025": "Monangai was selected by Chicago in the seventh round of April's draft. He is 5-foot-8 with the shortest arms in this RB class and he didn't show too well at the combine, running a 4.60 40 and tying for the shortest broad jump (117). His collegiate stats are underwhelming for the most part, though some of that seems to be team-related, as his 1.52 yards before contact across 47 games is lowest in this class, whereas he was solid in YAC (3.30) and forced missed tackle rate (4.2). Monangai will open his career behind D'Andre Swift and Roschon Johnson, so he's well off the fantasy radar."
+  },
+  {
+    "rank": 280,
+    "player_name": "Chris Brooks",
+    "team": "Green Bay Packers",
+    "position": "RB",
+    "status": null,
+    "statistics_2024": {
+      "CAR": 36,
+      "YDS": 183,
+      "AVG": 5.1,
+      "TD": 1,
+      "REC": 11,
+      "YDS": 69,
+      "TD": 0,
+      "FPTS": 42.2
+    },
+    "projections_2025": {
+      "CAR": 27,
+      "YDS": 116,
+      "AVG": 4.3,
+      "TD": 1,
+      "REC": 4,
+      "YDS": 27,
+      "TD": 0,
+      "FPTS": 23.88
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 281,
+    "player_name": "Alec Ingold",
+    "team": "Miami Dolphins",
+    "position": "RB",
+    "status": "Questionable",
+    "statistics_2024": {
+      "CAR": 10,
+      "YDS": 17,
+      "AVG": 1.7,
+      "TD": 1,
+      "REC": 11,
+      "YDS": 96,
+      "TD": 0,
+      "FPTS": 26.3
+    },
+    "projections_2025": {
+      "CAR": 8,
+      "YDS": 34,
+      "AVG": 4.2,
+      "TD": 0,
+      "REC": 9,
+      "YDS": 65,
+      "TD": 0,
+      "FPTS": 22.34
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 282,
+    "player_name": "Dare Ogunbowale",
+    "team": "Houston Texans",
+    "position": "RB",
+    "status": null,
+    "statistics_2024": {
+      "CAR": 30,
+      "YDS": 112,
+      "AVG": 3.7,
+      "TD": 0,
+      "REC": 19,
+      "YDS": 198,
+      "TD": 1,
+      "FPTS": 56.0
+    },
+    "projections_2025": {
+      "CAR": 8,
+      "YDS": 34,
+      "AVG": 4.1,
+      "TD": 0,
+      "REC": 8,
+      "YDS": 63,
+      "TD": 0,
+      "FPTS": 21.11
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 283,
+    "player_name": "Tahj Brooks",
+    "team": "Cincinnati Bengals",
+    "position": "RB",
+    "status": null,
+    "statistics_2024": {
+      "CAR": null,
+      "YDS": null,
+      "AVG": null,
+      "TD": null,
+      "REC": null,
+      "YDS": null,
+      "TD": null,
+      "FPTS": null
+    },
+    "projections_2025": {
+      "CAR": 25,
+      "YDS": 101,
+      "AVG": 4.0,
+      "TD": 1,
+      "REC": 2,
+      "YDS": 16,
+      "TD": 0,
+      "FPTS": 19.54
+    },
+    "outlook_2025": "The Bengals selected Brooks in the sixth round of April's draft. Brooks soaked up 879 carries during his five-year collegiate tenure, which is the most in this year's rookie class. The Texas Tech product ran for 1,500-plus yards in both 2023 and 2024 and also caught at least 27 passes each of the past three seasons. He's strong and quick with decent size. Brooks figures to begin his career buried behind lead back Chase Brown, as well as complementary option Samaje Perine."
+  },
+  {
+    "rank": 284,
+    "player_name": "Jordan Whittington",
+    "team": "Los Angeles Rams",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 28,
+      "REC": 22,
+      "YDS": 293,
+      "AVG": 13.3,
+      "TD": 0,
+      "CAR": 2,
+      "RUSH_YDS": 12,
+      "RUSH_TD": 0,
+      "FPTS": 52.5
+    },
+    "projections_2025": {
+      "TAR": 31,
+      "REC": 21,
+      "YDS": 248,
+      "AVG": 11.7,
+      "TD": 2,
+      "CAR": 2,
+      "RUSH_YDS": 14,
+      "RUSH_TD": 0,
+      "FPTS": 58.83
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 285,
+    "player_name": "Chiefs D/ST",
+    "team": "Kansas City Chiefs",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 39,
+      "INT": 13,
+      "FR": 7,
+      "TD": 1,
+      "PA": 326,
+      "YA": 5451,
+      "FPTS": 135.9
+    },
+    "projections_2025": {
+      "SCK": 41,
+      "INT": 12,
+      "FR": 8,
+      "TD": 2,
+      "PA": 373,
+      "YA": 5926,
+      "FPTS": 136.75
+    },
+    "outlook_2025": "Steve Spagnuolo's defense is a sound, point-prevention-style unit that rarely burns fantasy owners week to week, but it isn't the flashy type that'll carry your matchup in a given week. The Chiefs return a similar roster in 2025, led by All-Pro DT Chris Jones, LB Nick Bolton and CB Trent McDuffie, meaning another good-not-elite season should be in order. Note, however, that the Chiefs' first-half schedule (five matchups against top-eight projected offenses) is much tougher than its second half. This could be a prime in-season D/ST target."
+  },
+  {
+    "rank": 286,
+    "player_name": "Bears D/ST",
+    "team": "Chicago Bears",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 40,
+      "INT": 11,
+      "FR": 13,
+      "TD": 3,
+      "PA": 368,
+      "YA": 6022,
+      "FPTS": 132.4
+    },
+    "projections_2025": {
+      "SCK": 38,
+      "INT": 13,
+      "FR": 9,
+      "TD": 3,
+      "PA": 380,
+      "YA": 5983,
+      "FPTS": 131.73
+    },
+    "outlook_2025": "The Bears' defensive strength is in their secondary, where CB Jaylon Johnson is a two-time Pro Bowler, though the addition of DT Grady Jarrett should help improve the team's line. Dennis Allen, who oversaw the Saints' better defensive seasons of the past decade, was also brought on as defensive coordinator. Nevertheless, the Bears D/ST has its work cut out in the competitive NFC North, rendering it merely an in-season streamer."
+  },
+  {
+    "rank": 287,
+    "player_name": "Jason Myers",
+    "team": "Seattle Seahawks",
+    "position": "K",
+    "status": null,
+    "statistics_2024": {
+      "1-39": "10/10",
+      "40-49": "7/8",
+      "50+": "9/12",
+      "TOT": "26/30",
+      "XP": "37/40",
+      "FPTS": 136.0
+    },
+    "projections_2025": {
+      "1-39": "17/17",
+      "40-49": "7/9",
+      "50+": "5/7",
+      "TOT": "29/33",
+      "XP": "34/35",
+      "FPTS": 135.02
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 288,
+    "player_name": "Wil Lutz",
+    "team": "Denver Broncos",
+    "position": "K",
+    "status": null,
+    "statistics_2024": {
+      "1-39": "15/16",
+      "40-49": "11/11",
+      "50+": "5/7",
+      "TOT": "31/34",
+      "XP": "46/46",
+      "FPTS": 157.0
+    },
+    "projections_2025": {
+      "1-39": "16/17",
+      "40-49": "7/9",
+      "50+": "5/7",
+      "TOT": "28/33",
+      "XP": "38/40",
+      "FPTS": 134.74
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 289,
+    "player_name": "Theo Johnson",
+    "team": "New York Giants",
+    "position": "TE",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 43,
+      "REC": 29,
+      "YDS": 331,
+      "AVG": 11.4,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 68.1
+    },
+    "projections_2025": {
+      "TAR": 74,
+      "REC": 51,
+      "YDS": 547,
+      "AVG": 10.8,
+      "TD": 3,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 121.62
+    },
+    "outlook_2025": "Johnson is entering his second NFL season after playing a hefty 84% of the Giants' offensive snaps as a rookie. The fourth-round pick didn't see much work in the passing game early on and missed the final five games due to injury, but he was picking up steam prior to going down. After totaling a 14-150-0 receiving line on 20 targets (7% share) during his first eight games, Johnson leapt to a 15-181-1 line on 23 targets (19%) in the final four outings. The fantasy output wasn't great in the Giants' punchless offense, but the increase in reliance is notable and it will only help having Russell Wilson under center. The 24-year-old Johnson is a fine sleeper target in the late rounds."
+  },
+  {
+    "rank": 290,
+    "player_name": "Isaiah Likely",
+    "team": "Baltimore Ravens",
+    "position": "TE",
+    "status": "Questionable",
+    "statistics_2024": {
+      "TAR": 58,
+      "REC": 42,
+      "YDS": 477,
+      "AVG": 11.4,
+      "TD": 6,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 123.7
+    },
+    "projections_2025": {
+      "TAR": 55,
+      "REC": 38,
+      "YDS": 459,
+      "AVG": 12.1,
+      "TD": 5,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 112.67
+    },
+    "outlook_2025": "Likely is back for his fourth NFL season after quite the head-scratcher of a season in 2024. He came out with a bang with 12 targets and a TE-high 26.1 fantasy points in Week 1, but failed to come close to either number the rest of the season. He did find the end zone six times in 16 games, but a lack of volume allowed him only 6.5 fantasy PPG after the season opener. Playing behind (or alongside) Mark Andrews the past three years, Likely has yet to finish a season among the top 20 tight ends in snaps, routes, targets, catches or yardage. His 20th-place finish in fantasy PPG last season was a career best. Perhaps Likely's best days are ahead of him, but consistent fantasy value is a long shot as long as Andrews is on the roster. The 25-year-old does not need to be drafted."
+  },
+  {
+    "rank": 291,
+    "player_name": "Juwan Johnson",
+    "team": "New Orleans Saints",
+    "position": "TE",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 66,
+      "REC": 50,
+      "YDS": 548,
+      "AVG": 11.0,
+      "TD": 3,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 122.8
+    },
+    "projections_2025": {
+      "TAR": 72,
+      "REC": 51,
+      "YDS": 505,
+      "AVG": 9.9,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 113.72
+    },
+    "outlook_2025": "Johnson returns for his sixth season in New Orleans after a solid 2024 showing in which he set career highs in catches and yardage while appearing in every regular-season game for the first time in his career. The converted wide receiver has finished between 18th and 26th in fantasy PPG each of the past three seasons, though it's notable that he saw a boost in usage and production following Taysom Hill's injury late last season (12-plus points in three of his final five games). Hill is a long shot to play in 2025, though the team will be in better shape at wide receiver with a healthy Chris Olave and Rashid Shaheed, as well as newcomer Brandin Cooks. Playing with rookie QB Tyler Shough, Johnson, 28, is no more than a fringe TE2."
+  },
+  {
+    "rank": 292,
+    "player_name": "Ja'Tavion Sanders",
+    "team": "Carolina Panthers",
+    "position": "TE",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 43,
+      "REC": 33,
+      "YDS": 342,
+      "AVG": 10.4,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 73.2
+    },
+    "projections_2025": {
+      "TAR": 61,
+      "REC": 44,
+      "YDS": 443,
+      "AVG": 10.2,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 101.96
+    },
+    "outlook_2025": "Sanders is headed into his second NFL season following a solid rookie campaign in which he played 55% of Carolina's offensive snaps. He flashed a bit while playing an expanded role when Tommy Tremble was sidelined for four games near midseason (5.0 targets and 10.9 fantasy points per game), but the rookie was limited to a situational role in the 11 games Tremble was active (2.0 targets and 2.6 PPG). Sanders will be a candidate for more work in his second season, but he's still very young (22) and will continue to share work with Tremble. The 2024 fourth-round pick is only worth a late flier in deeper leagues."
+  },
+  {
+    "rank": 293,
+    "player_name": "Tyler Conklin",
+    "team": "Los Angeles Chargers",
+    "position": "TE",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 72,
+      "REC": 51,
+      "YDS": 449,
+      "AVG": 8.8,
+      "TD": 4,
+      "CAR": 1,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 121.9
+    },
+    "projections_2025": {
+      "TAR": 45,
+      "REC": 31,
+      "YDS": 301,
+      "AVG": 9.7,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 73.11
+    },
+    "outlook_2025": "Conklin signed with the Chargers after spending the first seven years of his career with the Vikings and Jets. The veteran tight end has finished top 10 among tight ends in pass routes each of the last four seasons, though that hasn't allowed much fantasy production. He finished either exactly 16th or 18th in fantasy points all four years and was in the 18th-to-23rd range on a per-game basis each year. Conklin has proven reliable (he's missed two games in his career) but he's not targeted quite enough, nor does he score enough touchdowns (11 in seven seasons) to allow starter-level production in fantasy. Conklin may lead the Chargers' TE room in targets, but with Will Dissly also in the mix, he's no more than a fringe TE2."
+  },
+  {
+    "rank": 294,
+    "player_name": "Jalen Nailor",
+    "team": "Minnesota Vikings",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 42,
+      "REC": 28,
+      "YDS": 414,
+      "AVG": 14.8,
+      "TD": 6,
+      "CAR": 3,
+      "RUSH_YDS": -4,
+      "RUSH_TD": 0,
+      "FPTS": 103.0
+    },
+    "projections_2025": {
+      "TAR": 33,
+      "REC": 20,
+      "YDS": 241,
+      "AVG": 11.8,
+      "TD": 2,
+      "CAR": 2,
+      "RUSH_YDS": 13,
+      "RUSH_TD": 0,
+      "FPTS": 58.55
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 295,
+    "player_name": "Malik Washington",
+    "team": "Miami Dolphins",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 36,
+      "REC": 26,
+      "YDS": 223,
+      "AVG": 8.6,
+      "TD": 0,
+      "CAR": 5,
+      "RUSH_YDS": 25,
+      "RUSH_TD": 1,
+      "FPTS": 54.8
+    },
+    "projections_2025": {
+      "TAR": 30,
+      "REC": 20,
+      "YDS": 221,
+      "AVG": 11.2,
+      "TD": 1,
+      "CAR": 4,
+      "RUSH_YDS": 24,
+      "RUSH_TD": 0,
+      "FPTS": 55.31
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 296,
+    "player_name": "Daniel Jones",
+    "team": "Indianapolis Colts",
+    "position": "QB",
+    "status": null,
+    "statistics_2024": {
+      "C/A": "216/341",
+      "YDS": 2070,
+      "TD": 8,
+      "INT": 7,
+      "CAR": 67,
+      "RUSH_YDS": 265,
+      "RUSH_TD": 2,
+      "FPTS": 150.5
+    },
+    "projections_2025": {
+      "C/A": "144/227",
+      "YDS": 1520,
+      "TD": 8,
+      "INT": 5,
+      "CAR": 70,
+      "RUSH_YDS": 317,
+      "RUSH_TD": 3,
+      "FPTS": 147.2
+    },
+    "outlook_2025": "Jones signed with the Colts and will compete with Anthony Richardson for the team's starting job. The 2019 first-round pick struggled with injuries (zero full seasons) and ineffectiveness (career 6.5 YPA) during six seasons with the Giants. After throwing 24 touchdowns in 13 games as a rookie, Jones totaled 45 pass TDs in 57 games the following five seasons. He finished one season better than 15th in fantasy PPG and that eighth-place finish in 2022 was primarily a product of big-time rushing (120-708-7). The 28-year-old isn't going to move the needle as a passer, but if he wins the Colts' gig, he could land on the streaming radar due to his legs (60-plus carries in four of the last five seasons). Even if he beats out Richardson, he'll only be a fringe QB2 and only worth drafting in superflex."
+  },
+  {
+    "rank": 297,
+    "player_name": "Rams D/ST",
+    "team": "Los Angeles Rams",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 38,
+      "INT": 13,
+      "FR": 7,
+      "TD": 4,
+      "PA": 386,
+      "YA": 5998,
+      "FPTS": 124.7
+    },
+    "projections_2025": {
+      "SCK": 41,
+      "INT": 13,
+      "FR": 9,
+      "TD": 2,
+      "PA": 373,
+      "YA": 6029,
+      "FPTS": 128.11
+    },
+    "outlook_2025": "Aaron Donald's retirement following 2023 proved no disaster, as Defensive Rookie of the Year DE Jared Verse stepped in as an immediate leader up front. The secondary, however, is another matter, as the team rotated six cornerbacks through the starting lineup and don't appear in any better shape at the position entering 2025. This is a sack-oriented, matchups-oriented D/ST, but at least Weeks 2 (@TEN) and 4 (IND) provide good opportunities early."
+  },
+  {
+    "rank": 298,
+    "player_name": "49ers D/ST",
+    "team": "San Francisco 49ers",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 37,
+      "INT": 11,
+      "FR": 6,
+      "TD": 2,
+      "PA": 436,
+      "YA": 5396,
+      "FPTS": 121.7
+    },
+    "projections_2025": {
+      "SCK": 41,
+      "INT": 13,
+      "FR": 9,
+      "TD": 2,
+      "PA": 387,
+      "YA": 6160,
+      "FPTS": 115.42
+    },
+    "outlook_2025": "Robert Saleh returns to the coordinator role only to helm a defense hit hard by free-agent losses (LB Dre Greenlaw, DT Javon Hargrave, S Talanoa Hufanga, CB Charvarius Ward), without adding much depth in return. That said, four-time All-Pro LB Fred Warner and 2022 Defensive Player of the Year DE Nick Bosa are capable of carrying this defense when healthy, and the team faces one of the most favorable D/ST schedules, beginning with @SEA and @NO the first two weeks."
+  },
+  {
+    "rank": 299,
+    "player_name": "Dolphins D/ST",
+    "team": "Miami Dolphins",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 35,
+      "INT": 10,
+      "FR": 6,
+      "TD": 0,
+      "PA": 348,
+      "YA": 5343,
+      "FPTS": 119.9
+    },
+    "projections_2025": {
+      "SCK": 43,
+      "INT": 12,
+      "FR": 8,
+      "TD": 2,
+      "PA": 399,
+      "YA": 6035,
+      "FPTS": 112.88
+    },
+    "outlook_2025": "The Dolphins put forth a much better real-life season than fantasy defensively in 2024, finishing inside the top 10 in points and yards allowed, but 27th or worse in sacks, turnovers and defensive touchdowns. Other than the free-agent departure of Jevon Holland, which left them precariously thin at safety, the Dolphins return largely similar personnel. This is a matchups-oriented D/ST, and most of the good ones come in the season's first half (especially @IND, NE in Weeks 1 and 2)."
+  },
+  {
+    "rank": 300,
+    "player_name": "Chargers D/ST",
+    "team": "Los Angeles Chargers",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 46,
+      "INT": 15,
+      "FR": 6,
+      "TD": 1,
+      "PA": 299,
+      "YA": 5514,
+      "FPTS": 148.6
+    },
+    "projections_2025": {
+      "SCK": 39,
+      "INT": 13,
+      "FR": 7,
+      "TD": 2,
+      "PA": 393,
+      "YA": 6115,
+      "FPTS": 117.85
+    },
+    "outlook_2025": "All credit to Jesse Minter for transforming what was a bottom-10 defense in 2023 to the league's best at point prevention in his first season as defensive coordinator. Still, the team cooled as the season progressed, three times scoring negative points in the final eight weeks, and it made few personnel improvements during the offseason. An opening-week Chiefs matchup is a hard “no” in fantasy, but the team does have a wealth of favorable matchups after that leading up to its Week 12 bye."
+  }
+]

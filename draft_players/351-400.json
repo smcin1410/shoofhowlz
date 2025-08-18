@@ -1,0 +1,1412 @@
+[
+  {
+    "rank": 351,
+    "player_name": "Younghoe Koo",
+    "team": "Atlanta Falcons",
+    "position": "K",
+    "status": null,
+    "statistics_2024": {
+      "1-39": "12/14",
+      "40-49": "7/11",
+      "50+": "6/9",
+      "TOT": "25/34",
+      "XP": "26/26",
+      "FPTS": 111.0
+    },
+    "projections_2025": {
+      "1-39": "15/17",
+      "40-49": "7/9",
+      "50+": "5/7",
+      "TOT": "27/33",
+      "XP": "36/40",
+      "FPTS": 127.79
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 352,
+    "player_name": "Andy Borregales",
+    "team": "New England Patriots",
+    "position": "K",
+    "status": null,
+    "statistics_2024": {
+      "1-39": "--/--",
+      "40-49": "--/--",
+      "50+": "--/--",
+      "TOT": "--/--",
+      "XP": "--/--",
+      "FPTS": null
+    },
+    "projections_2025": {
+      "1-39": "16/17",
+      "40-49": "7/9",
+      "50+": "5/7",
+      "TOT": "28/33",
+      "XP": "34/37",
+      "FPTS": 127.61
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 353,
+    "player_name": "Jake Moody",
+    "team": "San Francisco 49ers",
+    "position": "K",
+    "status": null,
+    "statistics_2024": {
+      "1-39": "14/14",
+      "40-49": "6/11",
+      "50+": "4/9",
+      "TOT": "24/34",
+      "XP": "32/33",
+      "FPTS": 108.0
+    },
+    "projections_2025": {
+      "1-39": "15/17",
+      "40-49": "7/9",
+      "50+": "4/7",
+      "TOT": "26/33",
+      "XP": "39/43",
+      "FPTS": 126.15
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 354,
+    "player_name": "Blake Grupe",
+    "team": "New Orleans Saints",
+    "position": "K",
+    "status": null,
+    "statistics_2024": {
+      "1-39": "14/15",
+      "40-49": "7/8",
+      "50+": "6/8",
+      "TOT": "27/31",
+      "XP": "31/33",
+      "FPTS": 127.0
+    },
+    "projections_2025": {
+      "1-39": "16/17",
+      "40-49": "7/9",
+      "50+": "5/7",
+      "TOT": "29/33",
+      "XP": "28/29",
+      "FPTS": 125.88
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 355,
+    "player_name": "Joey Slye",
+    "team": "Tennessee Titans",
+    "position": "K",
+    "status": null,
+    "statistics_2024": {
+      "1-39": "15/17",
+      "40-49": "5/7",
+      "50+": "6/9",
+      "TOT": "26/33",
+      "XP": "25/26",
+      "FPTS": 113.0
+    },
+    "projections_2025": {
+      "1-39": "16/17",
+      "40-49": "7/9",
+      "50+": "5/7",
+      "TOT": "28/33",
+      "XP": "32/34",
+      "FPTS": 124.86
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 356,
+    "player_name": "Graham Gano",
+    "team": "New York Giants",
+    "position": "K",
+    "status": null,
+    "statistics_2024": {
+      "1-39": "3/4",
+      "40-49": "4/5",
+      "50+": "2/2",
+      "TOT": "9/11",
+      "XP": "15/15",
+      "FPTS": 48.0
+    },
+    "projections_2025": {
+      "1-39": "16/17",
+      "40-49": "7/9",
+      "50+": "5/7",
+      "TOT": "28/33",
+      "XP": "29/31",
+      "FPTS": 124.52
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 357,
+    "player_name": "Nick Folk",
+    "team": "New York Jets",
+    "position": "K",
+    "status": null,
+    "statistics_2024": {
+      "1-39": "7/7",
+      "40-49": "8/9",
+      "50+": "6/6",
+      "TOT": "21/22",
+      "XP": "25/25",
+      "FPTS": 107.0
+    },
+    "projections_2025": {
+      "1-39": "17/17",
+      "40-49": "8/9",
+      "50+": "5/7",
+      "TOT": "30/33",
+      "XP": "31/32",
+      "FPTS": 134.82
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 358,
+    "player_name": "Dustin Hopkins",
+    "team": "Cleveland Browns",
+    "position": "K",
+    "status": null,
+    "statistics_2024": {
+      "1-39": "9/11",
+      "40-49": "5/8",
+      "50+": "4/8",
+      "TOT": "18/27",
+      "XP": "17/20",
+      "FPTS": 75.0
+    },
+    "projections_2025": {
+      "1-39": "16/17",
+      "40-49": "7/9",
+      "50+": "5/7",
+      "TOT": "28/34",
+      "XP": "25/27",
+      "FPTS": 118.71
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 359,
+    "player_name": "Jaguars D/ST",
+    "team": "Jacksonville Jaguars",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 34,
+      "INT": 6,
+      "FR": 3,
+      "TD": 2,
+      "PA": 433,
+      "YA": 6629,
+      "FPTS": 74.6
+    },
+    "projections_2025": {
+      "SCK": 38,
+      "INT": 13,
+      "FR": 7,
+      "TD": 2,
+      "PA": 386,
+      "YA": 6020,
+      "FPTS": 123.27
+    },
+    "outlook_2025": "After the Jaguars finished bottom 5 in the league in points and yards allowed, sacks, turnovers and, yes, fantasy points last season, they brought in both a new head coach (Liam Coen) and defensive coordinator (Anthony Campanile). The goal: To coax more out of DEs Travon Walker and Josh Hines-Allen and LB Devin Lloyd, all of them first-round draftees. If you're the gambling type, that first-week matchup is tasty (CAR), but the wiser play is to monitor this defense, which has most of its better matchups during the season's second half."
+  },
+  {
+    "rank": 360,
+    "player_name": "Cowboys D/ST",
+    "team": "Dallas Cowboys",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 52,
+      "INT": 13,
+      "FR": 9,
+      "TD": 4,
+      "PA": 456,
+      "YA": 6039,
+      "FPTS": 121.1
+    },
+    "projections_2025": {
+      "SCK": 43,
+      "INT": 12,
+      "FR": 9,
+      "TD": 3,
+      "PA": 406,
+      "YA": 6024,
+      "FPTS": 124.81
+    },
+    "outlook_2025": "The ultimate risk/reward fantasy defense, the Cowboys were ravaged by injuries in 2024 (CBs DaRon Bland and Trevon Diggs and DEs DeMarcus Lawrence and Micah Parsons missed a combined 33 games), finished third in sacks and had four defensive touchdowns. They'll hope for more luck on the health front under new defensive coordinator Matt Eberflus, but it's tough to see a path back to the top of the fantasy leaderboard with so many NFC East and AFC West games on their schedule, beginning with a “no way” Week 1 matchup against the Eagles."
+  },
+  {
+    "rank": 361,
+    "player_name": "Browns D/ST",
+    "team": "Cleveland Browns",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 41,
+      "INT": 4,
+      "FR": 8,
+      "TD": 2,
+      "PA": 417,
+      "YA": 5816,
+      "FPTS": 124.5
+    },
+    "projections_2025": {
+      "SCK": 39,
+      "INT": 11,
+      "FR": 8,
+      "TD": 2,
+      "PA": 404,
+      "YA": 6027,
+      "FPTS": 108.09
+    },
+    "outlook_2025": "As if the Browns needed anything more stacked against them, their defense draws one of the most brutal September schedules: CIN, @BAL, GB, @DET (plus MIN to begin October). Between that and LB Jeremiah Owusu-Koramoah's being out for the season, this is more of a wait-and-see unit than one to draft, despite its No. 3 finish in fantasy points in 2023. But there is talent here, including five-time All-Pro DE Myles Garrett and No. 5 overall draft pick DT Mason Graham."
+  },
+  {
+    "rank": 362,
+    "player_name": "Titans D/ST",
+    "team": "Tennessee Titans",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 32,
+      "INT": 11,
+      "FR": 6,
+      "TD": 0,
+      "PA": 430,
+      "YA": 5291,
+      "FPTS": 106.3
+    },
+    "projections_2025": {
+      "SCK": 39,
+      "INT": 12,
+      "FR": 8,
+      "TD": 2,
+      "PA": 387,
+      "YA": 6076,
+      "FPTS": 111.54
+    },
+    "outlook_2025": "The Titans allowed the second-fewest yards but fifth-most points last season, as frequent turnovers by their dreadful offense put their defense in constantly awful field position. On paper, the Titans don't have much worth celebrating, with DTs Jeffery Simmons and T'Vondre Sweat among the highlights, but they do have one of the league's softest D/ST schedules. If they look competent early, they could have many midseason matchups to exploit."
+  },
+  {
+    "rank": 363,
+    "player_name": "Falcons D/ST",
+    "team": "Atlanta Falcons",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 31,
+      "INT": 12,
+      "FR": 6,
+      "TD": 4,
+      "PA": 409,
+      "YA": 5868,
+      "FPTS": 111.3
+    },
+    "projections_2025": {
+      "SCK": 41,
+      "INT": 13,
+      "FR": 9,
+      "TD": 2,
+      "PA": 401,
+      "YA": 6181,
+      "FPTS": 109.37
+    },
+    "outlook_2025": "Few teams get as little defensive pressure as the Falcons, who have finished in the bottom 2 in sacks in three of the past four seasons. That was a catalyst to the team drafting Jalon Walker and James Pearce Jr., as well as signing Leonard Floyd, to bolster the defensive line. That'll help Jeff Ulbrich in his first season as defensive coordinator, but he has a lot of work to do before making this a fantasy-relevant unit. On a positive note, the Falcons do have a long stretch of favorable matchups in November."
+  },
+  {
+    "rank": 364,
+    "player_name": "Saints D/ST",
+    "team": "New Orleans Saints",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 39,
+      "INT": 14,
+      "FR": 3,
+      "TD": 1,
+      "PA": 380,
+      "YA": 6459,
+      "FPTS": 105.6
+    },
+    "projections_2025": {
+      "SCK": 37,
+      "INT": 12,
+      "FR": 5,
+      "TD": 2,
+      "PA": 403,
+      "YA": 6111,
+      "FPTS": 99.66
+    },
+    "outlook_2025": "Under new defensive coordinator Brandon Staley (and new head coach Kellen Moore), the Saints will shift from a 4-3 to 3-4 base defense, presenting a challenge for an aging unit lacking in cornerback depth. Between DE Cameron Jordan, LB Demario Davis and S Tyrann Mathieu, there's enough here to make a matchups case when all are healthy, but the Saints are middling in terms of schedule favorability, with only four matchups against bottom-eight projected offenses."
+  },
+  {
+    "rank": 365,
+    "player_name": "Commanders D/ST",
+    "team": "Washington Commanders",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 43,
+      "INT": 7,
+      "FR": 10,
+      "TD": 1,
+      "PA": 391,
+      "YA": 5558,
+      "FPTS": 119.0
+    },
+    "projections_2025": {
+      "SCK": 42,
+      "INT": 13,
+      "FR": 8,
+      "TD": 2,
+      "PA": 415,
+      "YA": 6266,
+      "FPTS": 100.41
+    },
+    "outlook_2025": "Thanks in part to the additions of LBs Frankie Luvu and Bobby Wagner, the Commanders improved from fantasy's worst D/ST in 2023 to 23rd last season, a noticeable improvement but one still reflecting a large amount of room for growth. S Will Harris and DT Javon Kinlaw join the fray for 2025, a boost but unlikely enough to push this team into the upper tier at the position. Hey, at least the Commanders' Weeks 1 (NYG) and 3 (LV) matchups are worth a look."
+  },
+  {
+    "rank": 366,
+    "player_name": "Raiders D/ST",
+    "team": "Las Vegas Raiders",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 38,
+      "INT": 10,
+      "FR": 3,
+      "TD": 1,
+      "PA": 414,
+      "YA": 5663,
+      "FPTS": 99.6
+    },
+    "projections_2025": {
+      "SCK": 39,
+      "INT": 11,
+      "FR": 8,
+      "TD": 2,
+      "PA": 417,
+      "YA": 6184,
+      "FPTS": 94.3
+    },
+    "outlook_2025": "The Raiders boast one of the league's better defensive fronts, led by four-time Pro Bowler DE Maxx Crosby, and likely to be bolstered should DT Christian Wilkins recover from the foot injury that ended his 2024 season in Week 5. Beyond that, there's little cause for excitement with this unit, which has a below-average D/ST schedule from a matchups perspective. Hey, at least we can say they begin 2025 hosting the Patriots."
+  },
+  {
+    "rank": 367,
+    "player_name": "Bengals D/ST",
+    "team": "Cincinnati Bengals",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 36,
+      "INT": 15,
+      "FR": 10,
+      "TD": 3,
+      "PA": 416,
+      "YA": 5921,
+      "FPTS": 128.3
+    },
+    "projections_2025": {
+      "SCK": 39,
+      "INT": 13,
+      "FR": 7,
+      "TD": 2,
+      "PA": 410,
+      "YA": 6213,
+      "FPTS": 99.13
+    },
+    "outlook_2025": "Much of the Bengals' defensive prospects hinge upon their getting an extension done with All-Pro sack leader DE Trey Hendrickson. The team frequently engages in high-scoring affairs, making the D/ST susceptible to bad matchups, meaning lots of homework for fantasy managers. That said, new defensive coordinator Al Golden's unit does get a pair of dreamy assignments to begin 2025 (@CLE, JAX), so perhaps managers can capitalize on those before formulating an exit plan."
+  },
+  {
+    "rank": 368,
+    "player_name": "Panthers D/ST",
+    "team": "Carolina Panthers",
+    "position": "D/ST",
+    "status": null,
+    "statistics_2024": {
+      "SCK": 32,
+      "INT": 9,
+      "FR": 8,
+      "TD": 0,
+      "PA": 528,
+      "YA": 6877,
+      "FPTS": 33.8
+    },
+    "projections_2025": {
+      "SCK": 37,
+      "INT": 13,
+      "FR": 6,
+      "TD": 2,
+      "PA": 415,
+      "YA": 6317,
+      "FPTS": 87.7
+    },
+    "outlook_2025": "Defensively speaking, the Panthers' 2024 was a flat-out disaster. They surrendered a record 534 points, became one of only five teams this century to allow 30-plus points and 400-plus yards per game, and were ravaged by multiple injuries to key defenders. Having a healthy DT Derrick Brown back will surely help, and the Panthers' first seven games don't include a single truly terrifying D/ST matchup. Still, this is a matchups-oriented defense at best."
+  },
+  {
+    "rank": 369,
+    "player_name": "Parker Washington",
+    "team": "Jacksonville Jaguars",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 51,
+      "REC": 32,
+      "YDS": 390,
+      "AVG": 12.2,
+      "TD": 3,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 97.0
+    },
+    "projections_2025": {
+      "TAR": 35,
+      "REC": 21,
+      "YDS": 238,
+      "AVG": 11.1,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 52.92
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 370,
+    "player_name": "Elic Ayomanor",
+    "team": "Tennessee Titans",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": null,
+      "REC": null,
+      "YDS": null,
+      "AVG": null,
+      "TD": null,
+      "CAR": null,
+      "RUSH_YDS": null,
+      "RUSH_TD": null,
+      "FPTS": null
+    },
+    "projections_2025": {
+      "TAR": 33,
+      "REC": 20,
+      "YDS": 237,
+      "AVG": 11.7,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 52.21
+    },
+    "outlook_2025": "Ayomanor was selected by the Titans in the fourth round of April's draft. He sports a solid size/speed combo, though he lacks some short-area burst (as shown by his class-worst 1.58 10-yard split at the combine). That didn't slow him from a huge workload at Stanford, as he handled a 32% target share and 47% air yard share (second highest in this class) last season. His efficiency was mostly below average, but there's potential here. Ayomanor will begin his career behind Calvin Ridley, Tyler Lockett and perhaps Van Jefferson, Treylon Burks and fellow rookie Chimere Dike. Ayomanor is only worth drafting in dynasty."
+  },
+  {
+    "rank": 371,
+    "player_name": "Jermaine Burton",
+    "team": "Cincinnati Bengals",
+    "position": "WR",
+    "status": "Questionable",
+    "statistics_2024": {
+      "TAR": 14,
+      "REC": 4,
+      "YDS": 107,
+      "AVG": 26.8,
+      "TD": 0,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 14.7
+    },
+    "projections_2025": {
+      "TAR": 28,
+      "REC": 17,
+      "YDS": 220,
+      "AVG": 13.2,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 50.33
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 372,
+    "player_name": "Tim Patrick",
+    "team": "Detroit Lions",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 44,
+      "REC": 33,
+      "YDS": 394,
+      "AVG": 11.9,
+      "TD": 3,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 90.4
+    },
+    "projections_2025": {
+      "TAR": 27,
+      "REC": 18,
+      "YDS": 219,
+      "AVG": 12.3,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 49.28
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 373,
+    "player_name": "Robert Woods",
+    "team": "Pittsburgh Steelers",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 30,
+      "REC": 20,
+      "YDS": 203,
+      "AVG": 10.2,
+      "TD": 0,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 38.3
+    },
+    "projections_2025": {
+      "TAR": 33,
+      "REC": 20,
+      "YDS": 210,
+      "AVG": 10.7,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 47.21
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 374,
+    "player_name": "Demarcus Robinson",
+    "team": "San Francisco 49ers",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 64,
+      "REC": 31,
+      "YDS": 505,
+      "AVG": 16.3,
+      "TD": 7,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 123.5
+    },
+    "projections_2025": {
+      "TAR": 26,
+      "REC": 14,
+      "YDS": 229,
+      "AVG": 16.2,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 46.79
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 375,
+    "player_name": "Curtis Samuel",
+    "team": "Buffalo Bills",
+    "position": "WR",
+    "status": "Questionable",
+    "statistics_2024": {
+      "TAR": 46,
+      "REC": 31,
+      "YDS": 253,
+      "AVG": 8.2,
+      "TD": 1,
+      "CAR": 5,
+      "RUSH_YDS": 14,
+      "RUSH_TD": 0,
+      "FPTS": 63.7
+    },
+    "projections_2025": {
+      "TAR": 25,
+      "REC": 17,
+      "YDS": 167,
+      "AVG": 9.7,
+      "TD": 1,
+      "CAR": 5,
+      "RUSH_YDS": 23,
+      "RUSH_TD": 0,
+      "FPTS": 46.37
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 376,
+    "player_name": "Chimere Dike",
+    "team": "Tennessee Titans",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": null,
+      "REC": null,
+      "YDS": null,
+      "AVG": null,
+      "TD": null,
+      "CAR": null,
+      "RUSH_YDS": null,
+      "RUSH_TD": null,
+      "FPTS": null
+    },
+    "projections_2025": {
+      "TAR": 27,
+      "REC": 17,
+      "YDS": 196,
+      "AVG": 11.6,
+      "TD": 1,
+      "CAR": 2,
+      "RUSH_YDS": 13,
+      "RUSH_TD": 0,
+      "FPTS": 45.45
+    },
+    "outlook_2025": "Dike was selected by Tennessee in the fourth round of April's draft. He is a vertical target (12.7 aDOT) and return man whose collegiate receiving usage and efficiency was nothing spectacular, including a 1.74 YPRR and 56% catch rate. He can align all over the formation and showed well at the combine (4.34 40), but may be destined for backup WR and special teams work. He'll battle the likes of Van Jefferson, Treylon Burks and fellow fourth-round rookie Elic Ayomanor for snaps behind Calvin Ridley and Tyler Lockett this season. Dike is well off the short-term fantasy radar."
+  },
+  {
+    "rank": 377,
+    "player_name": "Troy Franklin",
+    "team": "Denver Broncos",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 53,
+      "REC": 28,
+      "YDS": 263,
+      "AVG": 9.4,
+      "TD": 2,
+      "CAR": 2,
+      "RUSH_YDS": 8,
+      "RUSH_TD": 0,
+      "FPTS": 67.1
+    },
+    "projections_2025": {
+      "TAR": 24,
+      "REC": 14,
+      "YDS": 202,
+      "AVG": 14.1,
+      "TD": 2,
+      "CAR": 2,
+      "RUSH_YDS": 13,
+      "RUSH_TD": 0,
+      "FPTS": 45.35
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 378,
+    "player_name": "Tory Horton",
+    "team": "Seattle Seahawks",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": null,
+      "REC": null,
+      "YDS": null,
+      "AVG": null,
+      "TD": null,
+      "CAR": null,
+      "RUSH_YDS": null,
+      "RUSH_TD": null,
+      "FPTS": null
+    },
+    "projections_2025": {
+      "TAR": 27,
+      "REC": 16,
+      "YDS": 207,
+      "AVG": 12.7,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 44.34
+    },
+    "outlook_2025": "Horton was selected by Seattle in the fifth round of April's draft. He busted out with 71-1,131-8 and 96-1,136-8 receiving lines in 2022 and 2023, respectively, before missing all but six games last season due to a knee injury. He has decent size, tested solid in Indy and posted good collegiate numbers in terms of raw totals (265-3,615-27 receiving) and efficiency (2.49 YPRR, 69% catch rate)."
+  },
+  {
+    "rank": 379,
+    "player_name": "Roman Wilson",
+    "team": "Pittsburgh Steelers",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 0,
+      "REC": 0,
+      "YDS": 0,
+      "AVG": 0.0,
+      "TD": 0,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 0.0
+    },
+    "projections_2025": {
+      "TAR": 27,
+      "REC": 17,
+      "YDS": 198,
+      "AVG": 11.6,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 43.14
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 380,
+    "player_name": "Kendrick Bourne",
+    "team": "New England Patriots",
+    "position": "WR",
+    "status": "Questionable",
+    "statistics_2024": {
+      "TAR": 38,
+      "REC": 28,
+      "YDS": 305,
+      "AVG": 10.9,
+      "TD": 1,
+      "CAR": 1,
+      "RUSH_YDS": 6,
+      "RUSH_TD": 0,
+      "FPTS": 65.1
+    },
+    "projections_2025": {
+      "TAR": 20,
+      "REC": 15,
+      "YDS": 152,
+      "AVG": 10.3,
+      "TD": 1,
+      "CAR": 2,
+      "RUSH_YDS": 16,
+      "RUSH_TD": 0,
+      "FPTS": 37.68
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 381,
+    "player_name": "Luke McCaffrey",
+    "team": "Washington Commanders",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 24,
+      "REC": 18,
+      "YDS": 168,
+      "AVG": 9.3,
+      "TD": 0,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 34.8
+    },
+    "projections_2025": {
+      "TAR": 22,
+      "REC": 14,
+      "YDS": 157,
+      "AVG": 11.1,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 37.62
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 382,
+    "player_name": "Devaughn Vele",
+    "team": "Denver Broncos",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 55,
+      "REC": 41,
+      "YDS": 475,
+      "AVG": 11.6,
+      "TD": 3,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 106.5
+    },
+    "projections_2025": {
+      "TAR": 22,
+      "REC": 15,
+      "YDS": 154,
+      "AVG": 10.4,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 37.52
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 383,
+    "player_name": "JuJu Smith-Schuster",
+    "team": "Kansas City Chiefs",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 26,
+      "REC": 18,
+      "YDS": 231,
+      "AVG": 12.8,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 53.1
+    },
+    "projections_2025": {
+      "TAR": 22,
+      "REC": 15,
+      "YDS": 158,
+      "AVG": 10.5,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 36.51
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 384,
+    "player_name": "Cade Stover",
+    "team": "Houston Texans",
+    "position": "TE",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 22,
+      "REC": 15,
+      "YDS": 133,
+      "AVG": 8.9,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 34.3
+    },
+    "projections_2025": {
+      "TAR": 22,
+      "REC": 16,
+      "YDS": 158,
+      "AVG": 10.2,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 36.45
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 385,
+    "player_name": "Tai Felton",
+    "team": "Minnesota Vikings",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": null,
+      "REC": null,
+      "YDS": null,
+      "AVG": null,
+      "TD": null,
+      "CAR": null,
+      "RUSH_YDS": null,
+      "RUSH_TD": null,
+      "FPTS": null
+    },
+    "projections_2025": {
+      "TAR": 22,
+      "REC": 14,
+      "YDS": 151,
+      "AVG": 11.0,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 36.1
+    },
+    "outlook_2025": "Felton was selected by Minnesota in the third round of April's draft. He is a thin, 183-pound receiver with a small wingspan but solid speed (4.37 40) and athletic ability (40-inch vert, 130-inch broad). He had a huge 2024 at Maryland (96-1,124-9 receiving line, 31% target share), but his efficiency was average, at best, both last season and for his career. He'll battle for a backup role behind Justin Jefferson and Jordan Addison and isn't on the 2025 fantasy radar."
+  },
+  {
+    "rank": 386,
+    "player_name": "Elijah Higgins",
+    "team": "Arizona Cardinals",
+    "position": "TE",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 24,
+      "REC": 20,
+      "YDS": 172,
+      "AVG": 8.6,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 49.2
+    },
+    "projections_2025": {
+      "TAR": 21,
+      "REC": 16,
+      "YDS": 143,
+      "AVG": 9.2,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 35.86
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 387,
+    "player_name": "Josh Whyle",
+    "team": "Tennessee Titans",
+    "position": "TE",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 37,
+      "REC": 28,
+      "YDS": 248,
+      "AVG": 8.9,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 60.8
+    },
+    "projections_2025": {
+      "TAR": 22,
+      "REC": 15,
+      "YDS": 144,
+      "AVG": 9.5,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 35.84
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 388,
+    "player_name": "Mack Hollins",
+    "team": "New England Patriots",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 50,
+      "REC": 31,
+      "YDS": 378,
+      "AVG": 12.2,
+      "TD": 5,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 98.8
+    },
+    "projections_2025": {
+      "TAR": 20,
+      "REC": 12,
+      "YDS": 155,
+      "AVG": 12.6,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 35.71
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 389,
+    "player_name": "Scott Matlock",
+    "team": "Los Angeles Chargers",
+    "position": "DT, RB",
+    "status": null,
+    "statistics_2024": {
+      "FF": 0,
+      "FR": 0,
+      "INT": 0,
+      "SCK": 1,
+      "TKA": 5,
+      "TT": 8,
+      "PD": 1,
+      "FPTS": 6.8
+    },
+    "projections_2025": {
+      "FF": 0,
+      "FR": 0,
+      "INT": 0,
+      "SCK": 0,
+      "TKA": 3,
+      "TT": 7,
+      "PD": 0,
+      "FPTS": 4.01
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 390,
+    "player_name": "Jaylin Lane",
+    "team": "Washington Commanders",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": null,
+      "REC": null,
+      "YDS": null,
+      "AVG": null,
+      "TD": null,
+      "CAR": null,
+      "RUSH_YDS": null,
+      "RUSH_TD": null,
+      "FPTS": null
+    },
+    "projections_2025": {
+      "TAR": 16,
+      "REC": 10,
+      "YDS": 120,
+      "AVG": 11.6,
+      "TD": 1,
+      "CAR": 2,
+      "RUSH_YDS": 13,
+      "RUSH_TD": 0,
+      "FPTS": 31.15
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 391,
+    "player_name": "Zay Jones",
+    "team": "Arizona Cardinals",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 11,
+      "REC": 8,
+      "YDS": 84,
+      "AVG": 10.5,
+      "TD": 0,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 16.4
+    },
+    "projections_2025": {
+      "TAR": 19,
+      "REC": 12,
+      "YDS": 128,
+      "AVG": 10.4,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 30.11
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 392,
+    "player_name": "Elijah Moore",
+    "team": "Buffalo Bills",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 102,
+      "REC": 61,
+      "YDS": 538,
+      "AVG": 8.8,
+      "TD": 1,
+      "CAR": 1,
+      "RUSH_YDS": 1,
+      "RUSH_TD": 0,
+      "FPTS": 120.9
+    },
+    "projections_2025": {
+      "TAR": 20,
+      "REC": 12,
+      "YDS": 133,
+      "AVG": 11.2,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 29.99
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 393,
+    "player_name": "Adam Trautman",
+    "team": "Denver Broncos",
+    "position": "TE",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 22,
+      "REC": 13,
+      "YDS": 188,
+      "AVG": 14.5,
+      "TD": 2,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 43.8
+    },
+    "projections_2025": {
+      "TAR": 16,
+      "REC": 11,
+      "YDS": 116,
+      "AVG": 10.7,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 29.53
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 394,
+    "player_name": "Luke Schoonmaker",
+    "team": "Dallas Cowboys",
+    "position": "TE",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 36,
+      "REC": 27,
+      "YDS": 241,
+      "AVG": 8.9,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 57.1
+    },
+    "projections_2025": {
+      "TAR": 18,
+      "REC": 12,
+      "YDS": 112,
+      "AVG": 9.0,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 29.0
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 395,
+    "player_name": "Marquez Valdes-Scantling",
+    "team": "Seattle Seahawks",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 44,
+      "REC": 19,
+      "YDS": 411,
+      "AVG": 21.6,
+      "TD": 4,
+      "CAR": 1,
+      "RUSH_YDS": 4,
+      "RUSH_TD": 0,
+      "FPTS": 84.5
+    },
+    "projections_2025": {
+      "TAR": 16,
+      "REC": 8,
+      "YDS": 149,
+      "AVG": 18.1,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 28.45
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 396,
+    "player_name": "Kalif Raymond",
+    "team": "Detroit Lions",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 22,
+      "REC": 17,
+      "YDS": 215,
+      "AVG": 12.6,
+      "TD": 2,
+      "CAR": 2,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 56.5
+    },
+    "projections_2025": {
+      "TAR": 14,
+      "REC": 10,
+      "YDS": 112,
+      "AVG": 11.0,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 27.22
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 397,
+    "player_name": "KhaDarel Hodge",
+    "team": "Atlanta Falcons",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 12,
+      "REC": 7,
+      "YDS": 131,
+      "AVG": 18.7,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 32.1
+    },
+    "projections_2025": {
+      "TAR": 16,
+      "REC": 9,
+      "YDS": 127,
+      "AVG": 13.5,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 26.16
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 398,
+    "player_name": "Jahan Dotson",
+    "team": "Philadelphia Eagles",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 33,
+      "REC": 19,
+      "YDS": 216,
+      "AVG": 11.4,
+      "TD": 0,
+      "CAR": 1,
+      "RUSH_YDS": 13,
+      "RUSH_TD": 0,
+      "FPTS": 41.9
+    },
+    "projections_2025": {
+      "TAR": 16,
+      "REC": 10,
+      "YDS": 116,
+      "AVG": 12.2,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 25.8
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 399,
+    "player_name": "Malachi Corley",
+    "team": "New York Jets",
+    "position": "WR",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 6,
+      "REC": 3,
+      "YDS": 16,
+      "AVG": 5.3,
+      "TD": 0,
+      "CAR": 2,
+      "RUSH_YDS": 26,
+      "RUSH_TD": 0,
+      "FPTS": 5.2
+    },
+    "projections_2025": {
+      "TAR": 14,
+      "REC": 9,
+      "YDS": 99,
+      "AVG": 11.4,
+      "TD": 1,
+      "CAR": 5,
+      "RUSH_YDS": 30,
+      "RUSH_TD": 0,
+      "FPTS": 25.44
+    },
+    "outlook_2025": "No outlook available."
+  },
+  {
+    "rank": 400,
+    "player_name": "Julian Hill",
+    "team": "Miami Dolphins",
+    "position": "TE",
+    "status": null,
+    "statistics_2024": {
+      "TAR": 19,
+      "REC": 12,
+      "YDS": 100,
+      "AVG": 8.3,
+      "TD": 0,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 22.0
+    },
+    "projections_2025": {
+      "TAR": 15,
+      "REC": 10,
+      "YDS": 103,
+      "AVG": 10.3,
+      "TD": 1,
+      "CAR": 0,
+      "RUSH_YDS": 0,
+      "RUSH_TD": 0,
+      "FPTS": 25.06
+    },
+    "outlook_2025": "No outlook available."
+  }
+]
