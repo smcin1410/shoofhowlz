@@ -3,7 +3,7 @@ import Header from './Header';
 import MainContent from './MainContent';
 import Sidebar from './Sidebar';
 
-const DraftPage = ({ socket, draftState, onReturnToLobby, isCommissioner, onAdminLogin, isMuted, setIsMuted }) => {
+const DraftPage = ({ socket, draftState, isCommissioner, user, onReturnToDashboard, onAdminAutoDraft }) => {
   const [activeTab, setActiveTab] = useState('player-pool');
 
   if (!draftState) {
@@ -25,11 +25,10 @@ const DraftPage = ({ socket, draftState, onReturnToLobby, isCommissioner, onAdmi
       <Header 
         socket={socket} 
         draftState={draftState} 
-        onReturnToLobby={onReturnToLobby}
+        onReturnToDashboard={onReturnToDashboard}
         isCommissioner={isCommissioner}
-        onAdminLogin={onAdminLogin}
-        isMuted={isMuted}
-        setIsMuted={setIsMuted}
+        user={user}
+        onAdminAutoDraft={onAdminAutoDraft}
       />
       
       {/* Main Content Area with top padding for fixed header */}

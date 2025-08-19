@@ -4,7 +4,7 @@ import { io } from 'socket.io-client';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import DraftPage from './components/DraftPage';
-import DraftLobby from './components/DraftLobby';
+import Lobby from './components/Lobby';
 import DraftSummary from './components/DraftSummary';
 import PickAnnouncement from './components/PickAnnouncement';
 import DisplayPage from './components/DisplayPage';
@@ -239,7 +239,7 @@ const MainApp = () => {
   if (appView === 'lobby') {
     return (
       <>
-        <DraftLobby
+        <Lobby
           user={user}
           currentDraft={currentDraft}
           isCommissioner={isCommissioner}
