@@ -44,6 +44,7 @@ const loadDraftStateFromLocal = () => {
 const MainApp = () => {
   const [socket, setSocket] = useState(null);
   const [draftState, setDraftState] = useState(null);
+  const [draftConfig, setDraftConfig] = useState(null); // Temporarily store draft config
   const [isInLobby, setIsInLobby] = useState(true);
   const [isDraftComplete, setIsDraftComplete] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
@@ -124,8 +125,9 @@ const MainApp = () => {
 
     newSocket.on('password-required', () => {
       const password = window.prompt("Admin password required to start the draft. Please enter the password:");
-      if (password) {
-        socket.emit('start-draft', { ...draftState, adminPassword: password });
+      if (password && draftConfig) {
+        // Re-emit start-draft with the entered password and stored config
+        socket.emit('start-draft', { ...draftConfig, adminPassword: password });
       }
     });
 
@@ -143,20 +145,21 @@ const MainApp = () => {
     return () => {
       newSocket.close();
     };
-  }, []); // Remove draftState dependency to prevent recreating listeners
+  }, [draftConfig]); // Add draftConfig to dependency array
 
-  const handleDraftStart = (draftConfig) => {
-    console.log('App handleDraftStart called with config:', draftConfig);
+  const handleDraftStart = (config) => {
+    console.log('App handleDraftStart called with config:', config);
+    setDraftConfig(config); // Store the config
     
     // If the user set an admin password, automatically grant them commissioner status
-    if (draftConfig.adminPassword) {
+    if (config.adminPassword) {
       setIsCommissioner(true);
       console.log('Admin password set, granting commissioner status');
     }
     
     if (socket) {
       console.log('Emitting start-draft to server');
-      socket.emit('start-draft', draftConfig);
+      socket.emit('start-draft', config);
     } else {
       console.log('No socket connection available');
     }

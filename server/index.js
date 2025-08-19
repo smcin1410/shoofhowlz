@@ -317,13 +317,13 @@ io.on('connection', (socket) => {
     console.log('Starting draft with configuration:', draftConfig);
 
     // If draft is already started and has an admin password, validate it
-    if (draftState.isDraftStarted && draftState.adminPassword && draftState.adminPassword !== draftConfig.adminPassword) {
+    if (draftState.adminPassword && draftState.adminPassword !== draftConfig.adminPassword) {
       socket.emit('password-required');
       return;
     }
 
     // If draft is already started and no password provided but one is required
-    if (draftState.isDraftStarted && draftState.adminPassword && !draftConfig.adminPassword) {
+    if (draftState.adminPassword && !draftConfig.adminPassword) {
       socket.emit('password-required');
       return;
     }
