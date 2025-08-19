@@ -316,6 +316,13 @@ io.on('connection', (socket) => {
   socket.on('start-draft', (draftConfig) => {
     console.log('Starting draft with configuration:', draftConfig);
 
+    // Verify that the user starting the draft is a commissioner
+    const commissioner = connectedParticipants.get(socket.id);
+    if (!commissioner || commissioner.role !== 'commissioner') {
+      socket.emit('error', 'Only the commissioner can start the draft.');
+      return;
+    }
+
     // If draft is already started and has an admin password, validate it
     if (draftState.adminPassword && draftState.adminPassword !== draftConfig.adminPassword) {
       socket.emit('password-required');
@@ -716,13 +723,44 @@ io.on('connection', (socket) => {
     }
   });
   
+  // Handle generate draft order
+  socket.on('generate-draft-order', () => {
+    const commissioner = connectedParticipants.get(socket.id);
+    if (!commissioner || commissioner.role !== 'commissioner') {
+      socket.emit('error', 'Only the commissioner can generate the draft order.');
+      return;
+    }
+
+    // Shuffle teams to randomize draft order
+    const shuffledTeams = [...draftState.teams].sort(() => Math.random() - 0.5);
+    const draftOrder = shuffledTeams.map(team => team.id);
+    draftState.draftOrder = [];
+
+    if (draftState.draftType === 'snake') {
+      for (let round = 1; round <= draftState.totalRounds; round++) {
+        const roundOrder = (round % 2 === 1) ? draftOrder : [...draftOrder].reverse();
+        draftState.draftOrder.push(...roundOrder);
+      }
+    } else {
+      for (let i = 0; i < draftState.totalRounds; i++) {
+        draftState.draftOrder.push(...draftOrder);
+      }
+    }
+    
+    io.emit('draft-state', draftState);
+    saveDraftState();
+  });
+
   // Handle participant join with username
   socket.on('join-lobby', (data) => {
-    const { username, role } = data;
+    const { username, role, adminPassword } = data;
     if (connectedParticipants.has(socket.id)) {
       const participant = connectedParticipants.get(socket.id);
       participant.username = username || 'Anonymous User';
       participant.role = role || 'participant';
+      if (role === 'commissioner' && adminPassword) {
+        participant.adminPassword = adminPassword;
+      }
       connectedParticipants.set(socket.id, participant);
       
       console.log(`${username} joined the lobby as ${role}`);

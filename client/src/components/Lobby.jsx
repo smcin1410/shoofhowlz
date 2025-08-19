@@ -45,10 +45,20 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo }) =>
       return;
     }
 
+    let adminPassword = null;
+    if (role === 'commissioner') {
+      adminPassword = window.prompt("🔑 Create a Commissioner Password\n\nThis password will be required to access admin controls during the draft.");
+      if (!adminPassword) {
+        alert("A password is required to join as commissioner.");
+        return;
+      }
+    }
+
     const newUserInfo = {
       username: tempUsername.trim(),
       role: role,
-      isReady: false
+      isReady: false,
+      adminPassword: adminPassword,
     };
 
     setUserInfo(newUserInfo);
@@ -163,7 +173,7 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo }) =>
 
     const savedDraft = {
       id: Date.now(),
-      name: leagueName,
+      name: `${leagueName} - ${new Date().toLocaleDateString()}`,
       config: draftConfig,
       timestamp: new Date().toISOString()
     };
@@ -430,26 +440,10 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo }) =>
                   .map((draft) => (
                     <div key={draft.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-700 rounded-lg border border-gray-600 hover:border-gray-500 transition-colors">
                       <div className="flex-1 mb-3 sm:mb-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-white">{draft.name}</h3>
-                          <span className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded">
-                            {new Date(draft.timestamp).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-400 space-y-1">
-                          <div className="flex flex-wrap gap-4">
-                            <span>👥 {draft.config.leagueSize} teams</span>
-                            <span>🔄 {draft.config.draftType === 'snake' ? 'Snake Draft' : 'Linear Draft'}</span>
-                            <span>🏆 {draft.config.totalRounds} rounds</span>
-                          </div>
-                          <div className="flex flex-wrap gap-4">
-                            <span>⏱️ {Math.floor(draft.config.timeClock / 60)}:{(draft.config.timeClock % 60).toString().padStart(2, '0')} per pick</span>
-                            <span>🎟️ {draft.config.tokens} extension tokens</span>
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-500 mt-2">
-                          Saved {new Date(draft.timestamp).toLocaleString()}
-                        </div>
+                        <h3 className="font-semibold text-white">{draft.name}</h3>
+                        <p className="text-sm text-gray-400">
+                          {draft.config.leagueSize} Teams | {draft.config.draftType} | {draft.config.totalRounds} Rounds
+                        </p>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <button
@@ -533,55 +527,42 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo }) =>
             {/* Active Participants */}
             <div className="bg-gray-800 rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  Active Participants ({participants.length})
-                </h3>
-                
+                <h3 className="text-lg font-semibold text-white">Active Participants ({participants.length})</h3>
                 {userInfo.username && (
                   <button
                     onClick={handleReadyToggle}
-                    className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                      userInfo.isReady 
-                        ? 'bg-green-600 hover:bg-green-700 text-white' 
-                        : 'bg-gray-600 hover:bg-gray-500 text-white'
+                    className={`px-4 py-2 rounded-lg text-white font-medium transition-colors ${
+                      userInfo.isReady ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-700'
                     }`}
                   >
-                    {userInfo.isReady ? 'Ready ✓' : 'Not Ready'}
+                    {userInfo.isReady ? 'Ready' : 'Set Ready'}
                   </button>
                 )}
               </div>
-              
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {participants.length === 0 ? (
-                  <p className="text-gray-400 text-sm">No participants yet...</p>
-                ) : (
-                  participants.map((participant) => (
-                    <div key={participant.socketId} className="flex items-center justify-between p-2 bg-gray-700 rounded">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${participant.isReady ? 'bg-green-400' : 'bg-gray-400'}`}></div>
-                        <span className="text-white font-medium">{participant.username}</span>
-                        {participant.role === 'commissioner' && (
-                          <span className="px-2 py-0.5 bg-yellow-600 text-white text-xs rounded">
-                            Commissioner
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-xs text-gray-400">
-                        {participant.isReady ? 'Ready' : 'Waiting'}
-                      </span>
+              <div className="space-y-2">
+                {participants.map((participant) => (
+                  <div key={participant.socketId} className="flex items-center justify-between p-2 bg-gray-700 rounded">
+                    <div className="flex items-center">
+                      <span className={`h-3 w-3 rounded-full mr-3 ${participant.isReady ? 'bg-green-500' : 'bg-gray-500'}`}></span>
+                      <span className="text-white">{participant.username}</span>
+                      {participant.role === 'commissioner' && (
+                        <span className="ml-2 text-xs text-yellow-400">(Commissioner)</span>
+                      )}
                     </div>
-                  ))
-                )}
+                    <span className={`text-xs px-2 py-1 rounded-full ${participant.isReady ? 'bg-green-500 text-white' : 'bg-gray-500 text-gray-200'}`}>
+                      {participant.isReady ? 'Ready' : 'Not Ready'}
+                    </span>
+                  </div>
+                ))}
               </div>
-              
-              {userInfo.username && (
-                <div className="mt-4 p-3 bg-gray-700 rounded-lg">
-                  <div className="text-sm text-gray-300">You are: <span className="text-white font-medium">{userInfo.username}</span></div>
-                  <div className="text-xs text-gray-400">Role: {userInfo.role === 'commissioner' ? 'Commissioner' : 'Participant'}</div>
-                  <div className="text-xs text-gray-400">Status: {userInfo.isReady ? 'Ready' : 'Not Ready'}</div>
+              {userInfo.role === 'commissioner' && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => navigator.clipboard.writeText(window.location.href)}
+                    className="w-full px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    Copy Invite Link
+                  </button>
                 </div>
               )}
             </div>
@@ -629,12 +610,22 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo }) =>
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 pt-6">
-            <button
-              onClick={handleStartDraft}
-              className="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-            >
-              Start Draft
-            </button>
+            {userInfo.role === 'commissioner' && (
+              <button
+                onClick={handleStartDraft}
+                className="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Start Draft
+              </button>
+            )}
+            {userInfo.role === 'commissioner' && (
+              <button
+                onClick={() => socket.emit('generate-draft-order')}
+                className="flex-1 px-6 py-4 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Generate Draft Order
+              </button>
+            )}
           </div>
         </div>
       </div>
