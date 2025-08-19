@@ -372,7 +372,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Assign team (Commissioner only)
+  // Enhanced team assignment (Commissioner only)
   socket.on('assign-team', (data) => {
     const { draftId, teamId, assignedUser, assignedBy } = data;
     
@@ -383,7 +383,11 @@ io.on('connection', (socket) => {
         const assignments = draftState.teams.map((team, index) => ({
           teamId: index + 1,
           teamName: team.name,
-          assignedUser: null
+          assignedUser: null,
+          assignedBy: null,
+          assignedAt: null,
+          isPreAssigned: false,
+          isLocked: false
         }));
         draftTeamAssignments.set(draftId, assignments);
       }
@@ -393,12 +397,34 @@ io.on('connection', (socket) => {
     if (assignments) {
       const teamIndex = assignments.findIndex(t => t.teamId === teamId);
       if (teamIndex !== -1) {
+        // Enhanced assignment tracking
         assignments[teamIndex].assignedUser = assignedUser;
+        assignments[teamIndex].assignedBy = assignedBy;
+        assignments[teamIndex].assignedAt = new Date().toISOString();
+        assignments[teamIndex].isPreAssigned = assignedUser !== null && assignedUser !== 'LOCAL';
+        assignments[teamIndex].isLocked = assignments[teamIndex].isPreAssigned;
         
         // Broadcast updated assignments
         io.to(`draft-${draftId}`).emit('team-assignments-update', assignments);
         
-        console.log(`Team ${teamId} assigned to ${assignedUser} by ${assignedBy}`);
+        const actionType = assignedUser ? 'assigned' : 'released';
+        console.log(`Enhanced Pre-Assignment: Team ${teamId} ${actionType} ${assignedUser ? `to ${assignedUser}` : ''} by ${assignedBy} at ${assignments[teamIndex].assignedAt}`);
+        
+        // Auto-assignment notification if participant is connected
+        if (assignedUser && assignedUser !== 'LOCAL') {
+          const participants = draftParticipants.get(draftId);
+          if (participants) {
+            const participant = Array.from(participants.values()).find(p => p.username === assignedUser || p.id === assignedUser);
+            if (participant) {
+              io.to(participant.socketId).emit('team-pre-assigned', {
+                teamId,
+                teamName: assignments[teamIndex].teamName,
+                assignedBy,
+                message: `You have been pre-assigned to Team ${teamId}: ${assignments[teamIndex].teamName} by ${assignedBy}`
+              });
+            }
+          }
+        }
       }
     }
   });
@@ -427,13 +453,61 @@ io.on('connection', (socket) => {
       // Check if team is available and user hasn't already claimed a team
       const alreadyClaimed = assignments.some(t => t.assignedUser === userId);
       
-      if (teamIndex !== -1 && !assignments[teamIndex].assignedUser && !alreadyClaimed) {
-        assignments[teamIndex].assignedUser = userId;
+      // Enhanced validation with pre-assignment protection
+      const teamAssignment = assignments[teamIndex];
+      
+      if (teamIndex === -1) {
+        socket.emit('team-claim-error', {
+          message: 'Invalid team selection',
+          type: 'invalid_team'
+        });
+        return;
+      }
+      
+      if (alreadyClaimed) {
+        socket.emit('team-claim-error', {
+          message: 'You have already claimed a team',
+          type: 'already_claimed'
+        });
+        return;
+      }
+      
+      // Check if team is pre-assigned to someone else
+      if (teamAssignment.isPreAssigned && teamAssignment.assignedUser !== userId) {
+        socket.emit('team-claim-error', {
+          message: `Team ${teamId} is pre-assigned to another participant and is protected from claiming`,
+          type: 'pre_assigned_protected'
+        });
+        return;
+      }
+      
+      // Check if team is available for claiming
+      if (teamAssignment.assignedUser && !teamAssignment.isPreAssigned) {
+        socket.emit('team-claim-error', {
+          message: 'Team is already claimed by another participant',
+          type: 'already_claimed_by_other'
+        });
+        return;
+      }
+      
+      // Allow claiming if team is unassigned or pre-assigned to this user
+      if (!teamAssignment.assignedUser || (teamAssignment.isPreAssigned && teamAssignment.assignedUser === userId)) {
+        teamAssignment.assignedUser = userId;
         
         // Broadcast updated assignments
         io.to(`draft-${draftId}`).emit('team-assignments-update', assignments);
         
-        console.log(`Team ${teamId} claimed by ${claimedBy}`);
+        const claimType = teamAssignment.isPreAssigned ? 'Pre-assigned team claimed' : 'Team claimed';
+        console.log(`Enhanced Team Claiming: ${claimType} - Team ${teamId} by ${claimedBy} (${userId})`);
+        
+        // Send success confirmation
+        socket.emit('team-claim-success', {
+          teamId,
+          teamName: teamAssignment.teamName,
+          message: teamAssignment.isPreAssigned 
+            ? `You have successfully claimed your pre-assigned team: ${teamAssignment.teamName}`
+            : `You have successfully claimed Team ${teamId}: ${teamAssignment.teamName}`
+        });
       }
     }
   });

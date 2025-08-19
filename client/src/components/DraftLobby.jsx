@@ -52,6 +52,27 @@ const DraftLobby = ({
       setTeamAssignments(assignments);
     });
 
+    // Enhanced team assignment notifications
+    socket.on('team-pre-assigned', (data) => {
+      alert(`🔒 Team Pre-Assignment!\n\n${data.message}\n\nYou can now proceed with the draft when it begins.`);
+    });
+
+    socket.on('team-claim-success', (data) => {
+      alert(`✅ Team Claimed Successfully!\n\n${data.message}`);
+    });
+
+    socket.on('team-claim-error', (data) => {
+      let alertMessage = `❌ Team Claim Failed\n\n${data.message}`;
+      
+      if (data.type === 'pre_assigned_protected') {
+        alertMessage += '\n\n💡 This team is reserved for a specific participant. Please choose an available team.';
+      } else if (data.type === 'already_claimed') {
+        alertMessage += '\n\n💡 You can only claim one team per draft.';
+      }
+      
+      alert(alertMessage);
+    });
+
     // Request chat history when joining
     socket.emit('request-chat-history', { draftId: currentDraft?.id });
 
@@ -60,6 +81,9 @@ const DraftLobby = ({
       socket.off('chat-history');
       socket.off('participants-update');
       socket.off('team-assignments-update');
+      socket.off('team-pre-assigned');
+      socket.off('team-claim-success');
+      socket.off('team-claim-error');
     };
   }, [socket, currentDraft?.id]);
 
@@ -244,108 +268,285 @@ const DraftLobby = ({
             {/* Team Management */}
             <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
               <h2 className="text-xl font-semibold text-white mb-4">
-                {isCommissioner ? 'Team Management' : 'Team Selection'}
+                {isCommissioner ? 'Team Pre-Assignment & Management' : 'Team Selection'}
               </h2>
               
               {isCommissioner ? (
                 <>
                   <p className="text-gray-400 text-sm mb-4">
-                    Assign participants to teams or mark teams as "Local" for in-person players.
+                    <strong>Enhanced Team Pre-Assignment:</strong> Assign specific participants to specific teams. 
+                    Pre-assigned teams will be automatically claimed when participants join and are protected from incorrect claiming.
                   </p>
-                  <div className="grid md:grid-cols-1 gap-3">
-                    {teamAssignments.map((assignment, index) => (
-                      <div key={index} className="flex items-center space-x-3 p-3 bg-gray-700 rounded">
-                        <span className="text-white font-medium w-20">
-                          Team {assignment.teamId}:
-                        </span>
-                        <span className="text-gray-300 flex-1">{assignment.teamName}</span>
-                        <select
-                          value={assignment.assignedUser || ''}
-                          onChange={(e) => handleAssignTeam(index, e.target.value || null)}
-                          className="bg-gray-600 text-white text-sm px-2 py-1 rounded border border-gray-500 min-w-32"
-                        >
-                          <option value="">Available</option>
-                          <option value="LOCAL">🏠 Local Player</option>
-                          {participants.map(participant => (
-                            <option key={participant.id} value={participant.id}>
-                              {participant.username}
-                            </option>
-                          ))}
-                        </select>
-                        {assignment.assignedUser && assignment.assignedUser !== 'LOCAL' && (
-                          <span className="text-green-400 text-xs">✓ Assigned</span>
-                        )}
-                        {assignment.assignedUser === 'LOCAL' && (
-                          <span className="text-blue-400 text-xs">🏠 Local</span>
-                        )}
-                      </div>
-                    ))}
+                  
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-3 gap-4 mb-6 text-center">
+                    <div className="bg-gray-700 rounded p-3">
+                      <div className="text-white font-medium">{teamAssignments.filter(t => t.assignedUser && t.assignedUser !== 'LOCAL').length}</div>
+                      <div className="text-gray-400 text-xs">Pre-Assigned</div>
+                    </div>
+                    <div className="bg-gray-700 rounded p-3">
+                      <div className="text-white font-medium">{teamAssignments.filter(t => t.assignedUser === 'LOCAL').length}</div>
+                      <div className="text-gray-400 text-xs">Local Players</div>
+                    </div>
+                    <div className="bg-gray-700 rounded p-3">
+                      <div className="text-white font-medium">{teamAssignments.filter(t => !t.assignedUser).length}</div>
+                      <div className="text-gray-400 text-xs">Available</div>
+                    </div>
                   </div>
-                </>
-              ) : (
-                <>
-                  <p className="text-gray-400 text-sm mb-4">
-                    Click "Claim" to select your team. You can only claim one team.
-                  </p>
+
                   <div className="grid md:grid-cols-1 gap-3">
                     {teamAssignments.map((assignment, index) => {
-                      const isClaimedByMe = assignment.assignedUser === user.username;
-                      const isClaimed = assignment.assignedUser && assignment.assignedUser !== 'LOCAL';
+                      const participantInfo = participants.find(p => p.id === assignment.assignedUser);
+                      const isPreAssigned = assignment.assignedUser && assignment.assignedUser !== 'LOCAL';
                       const isLocal = assignment.assignedUser === 'LOCAL';
-                      const canClaim = !isClaimed && !isLocal;
-                      const alreadyClaimedTeam = teamAssignments.some(t => t.assignedUser === user.username);
+                      const isConnected = participantInfo?.id && participants.some(p => p.id === participantInfo.id);
                       
                       return (
-                        <div key={index} className={`flex items-center justify-between p-3 rounded border ${
-                          isClaimedByMe ? 'bg-green-700 border-green-600' : 
-                          isClaimed ? 'bg-gray-700 border-gray-600' :
-                          isLocal ? 'bg-blue-700 border-blue-600' :
-                          'bg-gray-700 border-gray-600'
+                        <div key={index} className={`flex items-center space-x-3 p-3 rounded border-l-4 ${
+                          isPreAssigned ? (isConnected ? 'bg-green-700 border-green-500' : 'bg-yellow-700 border-yellow-500') :
+                          isLocal ? 'bg-blue-700 border-blue-500' :
+                          'bg-gray-700 border-gray-500'
                         }`}>
-                          <div className="flex items-center space-x-3">
-                            <span className="text-white font-medium">
-                              Team {assignment.teamId}: {assignment.teamName}
-                            </span>
-                            {isClaimedByMe && (
-                              <span className="text-green-200 text-sm">✓ Your Team</span>
-                            )}
-                            {isClaimed && !isClaimedByMe && (
-                              <span className="text-gray-400 text-sm">Claimed by {assignment.assignedUser}</span>
+                          <span className="text-white font-medium w-20">
+                            Team {assignment.teamId}:
+                          </span>
+                          <span className="text-gray-300 flex-1">{assignment.teamName}</span>
+                          <select
+                            value={assignment.assignedUser || ''}
+                            onChange={(e) => handleAssignTeam(index, e.target.value || null)}
+                            className="bg-gray-600 text-white text-sm px-2 py-1 rounded border border-gray-500 min-w-40"
+                          >
+                            <option value="">🔓 Available to Claim</option>
+                            <option value="LOCAL">🏠 Local In-Person Player</option>
+                            {participants.map(participant => (
+                              <option key={participant.id} value={participant.id}>
+                                🔒 {participant.username} {participant.isReady ? '✓' : '⏳'}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="flex items-center space-x-2">
+                            {isPreAssigned && (
+                              <>
+                                <span className={`text-xs px-2 py-1 rounded ${
+                                  isConnected ? 'bg-green-600 text-green-100' : 'bg-yellow-600 text-yellow-100'
+                                }`}>
+                                  {isConnected ? '🔒 Pre-Assigned & Connected' : '🔒 Pre-Assigned (Waiting)'}
+                                </span>
+                                {participantInfo && (
+                                  <span className="text-gray-300 text-xs">
+                                    ({participantInfo.username})
+                                  </span>
+                                )}
+                              </>
                             )}
                             {isLocal && (
-                              <span className="text-blue-200 text-sm">🏠 Local Player</span>
+                              <span className="text-blue-200 text-xs px-2 py-1 bg-blue-600 rounded">
+                                🏠 Local Player
+                              </span>
+                            )}
+                            {!assignment.assignedUser && (
+                              <span className="text-gray-400 text-xs px-2 py-1 bg-gray-600 rounded">
+                                🔓 First-Come-First-Serve
+                              </span>
                             )}
                           </div>
-                          
-                          {canClaim && !alreadyClaimedTeam && (
-                            <button
-                              onClick={() => handleClaimTeam(index)}
-                              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
-                            >
-                              Claim Team
-                            </button>
-                          )}
-                          
-                          {isClaimedByMe && (
-                            <button
-                              onClick={() => handleAssignTeam(index, null)}
-                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
-                            >
-                              Release
-                            </button>
-                          )}
                         </div>
                       );
                     })}
                   </div>
                   
-                  {teamAssignments.some(t => t.assignedUser === user.username) && (
-                    <div className="mt-4 p-3 bg-green-800 border border-green-600 rounded">
-                      <p className="text-green-200 text-sm">
-                        ✓ You have claimed your team! You're ready for the draft.
+                  {/* Quick Assignment Section */}
+                  <div className="mt-6 pt-4 border-t border-gray-600">
+                    <h3 className="text-white font-medium mb-3">Quick Pre-Assignment</h3>
+                    <p className="text-gray-400 text-sm mb-3">
+                      Auto-assign all connected participants to available teams in order
+                    </p>
+                    <button
+                      onClick={() => {
+                        const availableTeams = teamAssignments.filter(t => !t.assignedUser);
+                        const unassignedParticipants = participants.filter(p => 
+                          p.role !== 'commissioner' && !teamAssignments.some(t => t.assignedUser === p.id)
+                        );
+                        
+                        const updates = [...teamAssignments];
+                        unassignedParticipants.slice(0, availableTeams.length).forEach((participant, idx) => {
+                          const teamIndex = teamAssignments.findIndex(t => !t.assignedUser);
+                          if (teamIndex !== -1) {
+                            updates[teamIndex] = { ...updates[teamIndex], assignedUser: participant.id };
+                          }
+                        });
+                        
+                        setTeamAssignments(updates);
+                        
+                        // Send all assignments to server
+                        updates.forEach((assignment, index) => {
+                          if (assignment.assignedUser && assignment.assignedUser !== teamAssignments[index].assignedUser) {
+                            socket?.emit('assign-team', {
+                              draftId: currentDraft?.id,
+                              teamId: assignment.teamId,
+                              assignedUser: assignment.assignedUser,
+                              assignedBy: user.username
+                            });
+                          }
+                        });
+                      }}
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm"
+                      disabled={participants.filter(p => p.role !== 'commissioner').length === 0}
+                    >
+                      🪄 Auto-Assign Connected Participants
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Check if user has a pre-assigned team */}
+                  {(() => {
+                    const myPreAssignedTeam = teamAssignments.find(t => t.assignedUser === user.username);
+                    const myClaimedTeam = teamAssignments.find(t => t.assignedUser === user.username);
+                    
+                    if (myPreAssignedTeam) {
+                      return (
+                        <div className="mb-4 p-4 bg-green-800 border border-green-600 rounded">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-green-200 font-medium">🔒 Your Pre-Assigned Team</h3>
+                              <p className="text-green-300 text-sm mt-1">
+                                <strong>Team {myPreAssignedTeam.teamId}: {myPreAssignedTeam.teamName}</strong>
+                              </p>
+                              <p className="text-green-200 text-xs mt-1">
+                                This team has been reserved for you by the commissioner. You're all set for the draft!
+                              </p>
+                            </div>
+                            <div className="text-green-400 text-2xl">✓</div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <p className="text-gray-400 text-sm mb-4">
+                        {teamAssignments.some(t => t.assignedUser && t.assignedUser !== 'LOCAL' && t.assignedUser !== user.username) 
+                          ? "🔒 Some teams are pre-assigned. You can claim any available team below." 
+                          : "Click \"Claim\" to select your team. You can only claim one team."
+                        }
                       </p>
-                    </div>
-                  )}
+                    );
+                  })()}
+                  
+                  <div className="grid md:grid-cols-1 gap-3">
+                    {teamAssignments.map((assignment, index) => {
+                      const isClaimedByMe = assignment.assignedUser === user.username;
+                      const isPreAssignedToMe = assignment.assignedUser === user.username;
+                      const isPreAssignedToOther = assignment.assignedUser && assignment.assignedUser !== 'LOCAL' && assignment.assignedUser !== user.username;
+                      const isLocal = assignment.assignedUser === 'LOCAL';
+                      const canClaim = !assignment.assignedUser; // Only available teams can be claimed
+                      const alreadyClaimedTeam = teamAssignments.some(t => t.assignedUser === user.username);
+                      const otherUserInfo = participants.find(p => p.id === assignment.assignedUser);
+                      
+                      return (
+                        <div key={index} className={`flex items-center justify-between p-3 rounded border-l-4 ${
+                          isClaimedByMe ? 'bg-green-700 border-green-500' : 
+                          isPreAssignedToOther ? 'bg-yellow-700 border-yellow-500' :
+                          isLocal ? 'bg-blue-700 border-blue-500' :
+                          'bg-gray-700 border-gray-500'
+                        }`}>
+                          <div className="flex items-center space-x-3 flex-1">
+                            <span className="text-white font-medium">
+                              Team {assignment.teamId}: {assignment.teamName}
+                            </span>
+                            
+                            {isClaimedByMe && (
+                              <span className="text-green-200 text-sm bg-green-600 px-2 py-1 rounded">
+                                ✓ Your Team
+                              </span>
+                            )}
+                            
+                            {isPreAssignedToOther && (
+                              <span className="text-yellow-200 text-sm bg-yellow-600 px-2 py-1 rounded">
+                                🔒 Pre-assigned to {otherUserInfo?.username || assignment.assignedUser}
+                              </span>
+                            )}
+                            
+                            {isLocal && (
+                              <span className="text-blue-200 text-sm bg-blue-600 px-2 py-1 rounded">
+                                🏠 Local Player
+                              </span>
+                            )}
+                            
+                            {canClaim && (
+                              <span className="text-gray-300 text-sm bg-gray-600 px-2 py-1 rounded">
+                                🔓 Available to Claim
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            {canClaim && !alreadyClaimedTeam && (
+                              <button
+                                onClick={() => handleClaimTeam(index)}
+                                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
+                              >
+                                Claim Team
+                              </button>
+                            )}
+                            
+                            {isClaimedByMe && !isPreAssignedToMe && (
+                              <button
+                                onClick={() => handleAssignTeam(index, null)}
+                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+                              >
+                                Release
+                              </button>
+                            )}
+                            
+                            {isPreAssignedToOther && (
+                              <span className="text-yellow-200 text-xs">
+                                Protected
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Status Messages */}
+                  {(() => {
+                    const myTeam = teamAssignments.find(t => t.assignedUser === user.username);
+                    const availableTeams = teamAssignments.filter(t => !t.assignedUser).length;
+                    const preAssignedTeams = teamAssignments.filter(t => t.assignedUser && t.assignedUser !== 'LOCAL' && t.assignedUser !== user.username).length;
+                    
+                    if (myTeam) {
+                      return (
+                        <div className="mt-4 p-3 bg-green-800 border border-green-600 rounded">
+                          <p className="text-green-200 text-sm">
+                            ✓ You have secured <strong>Team {myTeam.teamId}: {myTeam.teamName}</strong>! You're ready for the draft.
+                          </p>
+                        </div>
+                      );
+                    }
+                    
+                    if (availableTeams === 0) {
+                      return (
+                        <div className="mt-4 p-3 bg-red-800 border border-red-600 rounded">
+                          <p className="text-red-200 text-sm">
+                            ⚠️ All teams are assigned or claimed. Contact the commissioner if you need a team assignment.
+                          </p>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <div className="mt-4 p-3 bg-blue-800 border border-blue-600 rounded">
+                        <p className="text-blue-200 text-sm">
+                          💡 <strong>{availableTeams}</strong> teams available to claim. 
+                          {preAssignedTeams > 0 && (
+                            <span> <strong>{preAssignedTeams}</strong> teams are pre-assigned to other participants.</span>
+                          )}
+                        </p>
+                      </div>
+                    );
+                  })()}
                 </>
               )}
             </div>
