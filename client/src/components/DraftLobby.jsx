@@ -396,6 +396,48 @@ const DraftLobby = ({
                       🪄 Auto-Assign Connected Participants
                     </button>
                   </div>
+
+                  {/* Direct Join Links Section */}
+                  <div className="mt-6 pt-4 border-t border-gray-600">
+                    <h3 className="text-white font-medium mb-3">📱 Remote Participant Links</h3>
+                    <p className="text-gray-400 text-sm mb-3">
+                      Generate direct join links for each team to share with remote participants
+                    </p>
+                    <button
+                      onClick={() => {
+                        const baseUrl = window.location.origin;
+                        const directLinks = teamAssignments.map(assignment => ({
+                          teamId: assignment.teamId,
+                          teamName: assignment.teamName,
+                          directLink: `${baseUrl}/join/${currentDraft?.id}/team/${assignment.teamId}`,
+                          shareableText: `Join ${assignment.teamName} in our fantasy draft: ${baseUrl}/join/${currentDraft?.id}/team/${assignment.teamId}`
+                        }));
+
+                        // Create shareable text
+                        const allLinksText = directLinks.map(link => 
+                          `${link.teamName}: ${link.directLink}`
+                        ).join('\n\n');
+
+                        // Copy to clipboard
+                        navigator.clipboard.writeText(allLinksText).then(() => {
+                          alert('✅ Direct join links copied to clipboard!\n\nShare these links with remote participants for instant team access.');
+                        }).catch(() => {
+                          // Fallback: show in alert
+                          alert(`📱 Direct Join Links:\n\n${allLinksText}`);
+                        });
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
+                    >
+                      📋 Generate & Copy Team Links
+                    </button>
+                    
+                    <div className="mt-3 p-3 bg-blue-900 border border-blue-700 rounded text-sm">
+                      <p className="text-blue-200">
+                        <strong>💡 How it works:</strong> Share team-specific links via text/email. 
+                        Remote participants can join directly to their assigned team, skipping the lobby.
+                      </p>
+                    </div>
+                  </div>
                 </>
               ) : (
                 <>

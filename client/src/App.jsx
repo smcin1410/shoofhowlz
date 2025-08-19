@@ -10,6 +10,7 @@ import PickAnnouncement from './components/PickAnnouncement';
 import DisplayPage from './components/DisplayPage';
 import ResultsPage from './components/ResultsPage';
 import DraftOrderAnnouncement from './components/DraftOrderAnnouncement';
+import DirectJoinPage from './components/DirectJoinPage';
 import { useSound } from './hooks/useSound';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
@@ -327,6 +328,7 @@ const App = () => {
         <Route path="/" element={<MainApp />} />
         <Route path="/display" element={<DisplayPage />} />
         <Route path="/results/:draftId" element={<ResultsPage />} />
+        <Route path="/join/:draftId/team/:teamId" element={<DirectJoinPage />} />
       </Routes>
     </div>
   );

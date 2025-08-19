@@ -627,6 +627,105 @@ io.on('connection', (socket) => {
     adminAutoDraft(draftId, interval);
   });
 
+  // Enhanced direct join validation for streamlined remote joining
+  socket.on('validate-direct-join', (data) => {
+    const { draftId, teamId } = data;
+    
+    try {
+      const assignments = draftTeamAssignments.get(draftId);
+      const draftState = activeDrafts.get(draftId);
+      
+      if (!draftState) {
+        socket.emit('direct-join-validation', {
+          success: false,
+          message: 'Draft not found'
+        });
+        return;
+      }
+
+      const teamAssignment = assignments?.find(a => a.teamId === teamId);
+      
+      socket.emit('direct-join-validation', {
+        success: true,
+        message: 'Team available for direct join',
+        teamInfo: {
+          teamId: teamId,
+          teamName: teamAssignment?.teamName || `Team ${teamId}`,
+          isPreAssigned: teamAssignment?.isPreAssigned || false,
+          assignedUser: teamAssignment?.assignedUser
+        }
+      });
+
+    } catch (error) {
+      console.error('Direct join validation error:', error);
+      socket.emit('direct-join-validation', {
+        success: false,
+        message: 'Server error during validation'
+      });
+    }
+  });
+
+  // Direct team join for streamlined remote access
+  socket.on('direct-join-team', (data) => {
+    const { draftId, teamId, username } = data;
+    
+    try {
+      // Join the draft room
+      socket.join(`draft-${draftId}`);
+      
+      // Add participant to draft
+      if (!draftParticipants.has(draftId)) {
+        draftParticipants.set(draftId, new Map());
+      }
+      
+      const participants = draftParticipants.get(draftId);
+      participants.set(socket.id, {
+        id: socket.id,
+        username,
+        role: 'participant',
+        isReady: true, // Direct join participants are automatically ready
+        socketId: socket.id,
+        isDirectJoin: true,
+        assignedTeamId: teamId
+      });
+
+      // Automatically claim the team if available
+      const assignments = draftTeamAssignments.get(draftId);
+      if (assignments) {
+        const teamIndex = assignments.findIndex(t => t.teamId === teamId);
+        if (teamIndex !== -1) {
+          const teamAssignment = assignments[teamIndex];
+          
+          // Allow claiming if unassigned or pre-assigned to this user
+          if (!teamAssignment.assignedUser || teamAssignment.assignedUser === username) {
+            teamAssignment.assignedUser = socket.id;
+            teamAssignment.assignedBy = 'direct-join';
+            teamAssignment.assignedAt = new Date().toISOString();
+            
+            // Broadcast updated assignments
+            io.to(`draft-${draftId}`).emit('team-assignments-update', assignments);
+            
+            console.log(`Direct join successful: ${username} claimed Team ${teamId} via direct link`);
+          }
+        }
+      }
+
+      // Broadcast updated participants list
+      const participantsList = Array.from(participants.values());
+      io.to(`draft-${draftId}`).emit('participants-update', participantsList);
+
+      console.log(`${username} joined draft ${draftId} directly to team ${teamId}`);
+
+    } catch (error) {
+      console.error('Direct join error:', error);
+    }
+  });
+
+  // Keep-alive ping for mobile connections
+  socket.on('ping', () => {
+    socket.emit('pong');
+  });
+
   // Handle disconnection
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
