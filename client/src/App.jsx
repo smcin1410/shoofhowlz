@@ -124,7 +124,19 @@ const MainApp = () => {
       });
 
       newSocket.on('draft-order-generated', (data) => {
-        setDraftState(prevState => ({ ...prevState, draftOrder: data.draftOrder }));
+        console.log('draft-order-generated received:', data);
+        
+        // Create teams from the draft config
+        const teams = data.draftConfig.teamNames.map((name, index) => ({
+          id: index + 1,
+          name: name
+        }));
+        
+        setDraftState(prevState => ({ 
+          ...prevState, 
+          draftOrder: data.draftOrder,
+          teams: teams
+        }));
         setShowDraftOrderAnnouncement(true);
         
         // Store the draft config for starting after animation
@@ -280,6 +292,13 @@ const MainApp = () => {
             draftOrder={draftState?.draftOrder || []}
             teams={draftState?.teams || []}
             onClose={handleDraftOrderAnnouncementClose}
+            onStartDraft={() => {
+              // Start the actual draft after order announcement
+              if (socket && draftConfig) {
+                socket.emit('start-draft', draftConfig);
+              }
+              setShowDraftOrderAnnouncement(false);
+            }}
           />
         )}
       </>
