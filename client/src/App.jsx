@@ -7,6 +7,7 @@ import DraftSummary from './components/DraftSummary';
 import PickAnnouncement from './components/PickAnnouncement';
 import DisplayPage from './components/DisplayPage';
 import ResultsPage from './components/ResultsPage';
+import DraftOrderAnnouncement from './components/DraftOrderAnnouncement';
 import { useSound } from './hooks/useSound';
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:4000';
@@ -49,6 +50,7 @@ const MainApp = () => {
   const [isDraftComplete, setIsDraftComplete] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [showPickAnnouncement, setShowPickAnnouncement] = useState(false);
+  const [showDraftOrder, setShowDraftOrder] = useState(false);
   const [lastPick, setLastPick] = useState(null);
   const [error, setError] = useState(null);
   const [showRecoveryMessage, setShowRecoveryMessage] = useState(false);
@@ -107,6 +109,11 @@ const MainApp = () => {
         setIsDraftComplete(false);
         setShowRecoveryMessage(false);
       }
+    });
+
+    newSocket.on('draft-order-generated', (order) => {
+      setDraftState((prevState) => ({ ...prevState, draftOrder: order }));
+      setShowDraftOrder(true);
     });
 
     // Listen for draft completion
@@ -274,6 +281,15 @@ const MainApp = () => {
         />
       )}
       
+      {/* Draft Order Announcement Modal */}
+      {showDraftOrder && (
+        <DraftOrderAnnouncement
+          draftOrder={draftState.draftOrder}
+          teams={draftState.teams}
+          onClose={() => setShowDraftOrder(false)}
+        />
+      )}
+
       {/* Draft Completion Modal */}
       {showCompletionModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in">

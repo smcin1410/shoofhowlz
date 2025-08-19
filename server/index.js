@@ -747,7 +747,7 @@ io.on('connection', (socket) => {
       }
     }
     
-    io.emit('draft-state', draftState);
+    io.emit('draft-order-generated', draftState.draftOrder);
     saveDraftState();
   });
 
