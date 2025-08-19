@@ -4,7 +4,7 @@ import Header from './Header';
 import DraftBoard from './DraftBoard';
 import RecentPicks from './RecentPicks';
 
-const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:4000';
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
 
 const DisplayPage = () => {
   const [draftState, setDraftState] = useState(null);

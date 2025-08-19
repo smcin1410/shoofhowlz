@@ -12,7 +12,7 @@ import ResultsPage from './components/ResultsPage';
 import DraftOrderAnnouncement from './components/DraftOrderAnnouncement';
 import { useSound } from './hooks/useSound';
 
-const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:4000';
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
 
 // Auto-save draft state to localStorage
 const saveDraftStateToLocal = (draftState) => {
