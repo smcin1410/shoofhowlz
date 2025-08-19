@@ -38,6 +38,14 @@ const Dashboard = ({ user, onJoinDraft, onCreateDraft, onLogout }) => {
     }
   };
 
+  const handleDeleteDraft = (draftId, draftName) => {
+    if (window.confirm(`Are you sure you want to delete "${draftName}"? This cannot be undone.`)) {
+      const updatedDrafts = drafts.filter(d => d.id !== draftId);
+      setDrafts(updatedDrafts);
+      localStorage.setItem('drafts', JSON.stringify(updatedDrafts));
+    }
+  };
+
   const canJoinDraft = (draft) => {
     // User can join if they created it or were invited
     return draft.createdBy === user.id || 
@@ -164,14 +172,26 @@ const Dashboard = ({ user, onJoinDraft, onCreateDraft, onLogout }) => {
                       )}
                     </div>
                     
-                    {canJoinDraft(draft) && (
-                      <button
-                        onClick={() => handleJoinDraft(draft.id)}
-                        className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md text-sm transition-colors duration-200"
-                      >
-                        Join Draft
-                      </button>
-                    )}
+                    <div className="flex items-center space-x-2">
+                      {canJoinDraft(draft) && (
+                        <button
+                          onClick={() => handleJoinDraft(draft.id)}
+                          className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md text-sm transition-colors duration-200"
+                        >
+                          Join Draft
+                        </button>
+                      )}
+                      
+                      {draft.createdBy === user.id && (
+                        <button
+                          onClick={() => handleDeleteDraft(draft.id, draft.leagueName)}
+                          className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-3 rounded-md text-sm transition-colors duration-200"
+                          title="Delete Draft"
+                        >
+                          🗑️
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

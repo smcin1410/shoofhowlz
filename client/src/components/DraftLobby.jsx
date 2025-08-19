@@ -131,13 +131,19 @@ const DraftLobby = ({
       teamAssignments
     };
 
+    console.log('Draft order selection:', draftOrderType);
+    console.log('Draft config:', draftConfig);
+    console.log('Socket available:', !!socket);
+
     if (draftOrderType === 'random') {
       // Emit generate draft order event first
+      console.log('Emitting generate-draft-order event');
       socket.emit('generate-draft-order', draftConfig);
       setShowDraftOrderModal(false);
       // The start will happen after the draft order animation
     } else {
       // Start with manual order immediately
+      console.log('Starting draft with manual order');
       onStartDraft(draftConfig);
       setShowDraftOrderModal(false);
     }

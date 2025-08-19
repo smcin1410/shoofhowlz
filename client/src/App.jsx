@@ -84,8 +84,8 @@ const MainApp = () => {
 
   // Socket connection management
   useEffect(() => {
-    if (user && currentDraft) {
-      // Connect to Socket.IO server when user joins a draft
+    if (user) {
+      // Connect to Socket.IO server when user logs in
       const newSocket = io(SERVER_URL);
       setSocket(newSocket);
 
@@ -145,7 +145,7 @@ const MainApp = () => {
         newSocket.disconnect();
       };
     }
-  }, [user, currentDraft, isMuted, playPickSound]);
+  }, [user, isMuted, playPickSound]);
 
   // Authentication handlers
   const handleLogin = (userData) => {
@@ -167,6 +167,7 @@ const MainApp = () => {
 
   // Draft management handlers
   const handleCreateDraft = (draftConfig) => {
+    console.log('Creating draft:', draftConfig);
     setCurrentDraft(draftConfig);
     setDraftConfig(draftConfig);
     setIsCommissioner(true);
@@ -174,11 +175,14 @@ const MainApp = () => {
     
     // Join the draft room when creating
     if (socket) {
+      console.log('Emitting join-lobby for new draft');
       socket.emit('join-lobby', {
         username: user.username,
         role: 'commissioner',
         draftId: draftConfig.id
       });
+    } else {
+      console.log('No socket available when creating draft');
     }
   };
 
@@ -211,8 +215,16 @@ const MainApp = () => {
   };
 
   const handleStartDraft = (config) => {
+    console.log('handleStartDraft called');
+    console.log('Socket available:', !!socket);
+    console.log('Is commissioner:', isCommissioner);
+    console.log('Config:', config);
+    
     if (socket && isCommissioner) {
+      console.log('Emitting start-draft event');
       socket.emit('start-draft', config);
+    } else {
+      console.log('Cannot start draft - missing socket or not commissioner');
     }
   };
 
