@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo }) => {
+const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo, draftState }) => {
   const [leagueName, setLeagueName] = useState('');
   const [leagueSize, setLeagueSize] = useState(12);
   const [draftType, setDraftType] = useState('snake');
@@ -38,6 +38,32 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo }) =>
     })));
   }, [leagueSize]);
 
+  // Handle real-time chat functionality
+  useEffect(() => {
+    if (!socket) return;
+
+    // Request chat history when joining
+    socket.emit('request-chat-history');
+
+    // Listen for chat history
+    const handleChatHistory = (history) => {
+      setChatMessages(history);
+    };
+
+    // Listen for new chat messages
+    const handleNewChatMessage = (message) => {
+      setChatMessages(prev => [...prev, message]);
+    };
+
+    socket.on('chat-history', handleChatHistory);
+    socket.on('lobby-chat-message', handleNewChatMessage);
+
+    return () => {
+      socket.off('chat-history', handleChatHistory);
+      socket.off('lobby-chat-message', handleNewChatMessage);
+    };
+  }, [socket]);
+
   // Handle joining the lobby
   const handleJoinLobby = (role = 'participant') => {
     if (!tempUsername.trim()) {
@@ -47,7 +73,7 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo }) =>
 
     let adminPassword = null;
     if (role === 'commissioner') {
-      adminPassword = window.prompt("🔑 Create a Commissioner Password\n\nThis password will be required to access admin controls during the draft.");
+      adminPassword = window.prompt("🔑 Commissioner Setup\n\nCreate a password to secure admin controls:\n• Manual pick entry\n• Pause/resume timer\n• Undo picks\n• Draft management\n\nThis password will be used throughout the draft.");
       if (!adminPassword) {
         alert("A password is required to join as commissioner.");
         return;
@@ -116,17 +142,15 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo }) =>
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleStartDraft = () => {
-    console.log('handleStartDraft called!');
+  const handleCreateDraft = () => {
+    console.log('handleCreateDraft called!');
     
     if (!validateForm()) {
       console.log('Form validation failed');
       return;
     }
 
-    // Prompt for an admin password
-    const adminPassword = window.prompt("🔑 Commissioner Setup\n\nSet an admin password to access commissioner controls during the draft:\n• Manual pick entry\n• Pause/resume timer\n• Undo picks\n\nLeave blank for no admin controls.");
-
+    // Use the admin password that was already set when joining as commissioner
     const draftConfig = {
       leagueName,
       leagueSize,
@@ -135,7 +159,7 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo }) =>
       timeClock,
       totalRounds,
       teams,
-      adminPassword: adminPassword || null, // Add password to config
+      adminPassword: userInfo.adminPassword || null, // Use password from commissioner login
     };
 
     console.log('Draft config:', draftConfig);
@@ -152,8 +176,19 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo }) =>
     setSavedDrafts(updatedSavedDrafts);
     localStorage.setItem('savedDrafts', JSON.stringify(updatedSavedDrafts));
 
-    console.log('Calling onDraftStart with config:', draftConfig);
-    onDraftStart(draftConfig);
+    // Send create-draft event to server (this will create the draft but not start it)
+    if (socket) {
+      socket.emit('create-draft', draftConfig);
+    }
+  };
+
+  const handleStartDraft = () => {
+    console.log('Starting the draft...');
+    
+    // Send start-draft event to server (this will actually begin the drafting process)
+    if (socket) {
+      socket.emit('start-draft');
+    }
   };
 
   const handleSaveDraft = () => {
@@ -223,14 +258,11 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo }) =>
   };
 
   const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      const message = {
-        id: Date.now(),
-        text: newMessage,
-        timestamp: new Date().toLocaleTimeString(),
-        sender: 'You'
-      };
-      setChatMessages([...chatMessages, message]);
+    if (newMessage.trim() && socket) {
+      // Send message to server for broadcasting
+      socket.emit('lobby-chat-message', {
+        text: newMessage.trim()
+      });
       setNewMessage('');
     }
   };
@@ -572,20 +604,36 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo }) =>
               <h2 className="text-xl font-semibold text-blue-400 mb-4">Lobby Chat</h2>
             <div className="bg-gray-700 rounded-lg p-4 h-64 flex flex-col">
               <div className="flex-1 overflow-y-auto mb-4 space-y-2">
-                {chatMessages.map((message) => (
-                  <div key={message.id} className="flex items-start gap-2">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm text-gray-300">
-                        <span className="font-medium text-white">{message.sender}</span>
-                        <span className="text-gray-500 ml-2">{message.timestamp}</span>
-                      </div>
-                      <div className="text-sm text-gray-300 break-words">
-                        {message.text}
+                {chatMessages.length === 0 ? (
+                  <div className="text-center text-gray-500 py-8">
+                    <p>No messages yet...</p>
+                    <p className="text-sm">Start the conversation!</p>
+                  </div>
+                ) : (
+                  chatMessages.map((message) => (
+                    <div key={message.id} className="flex items-start gap-2">
+                      <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                        message.senderRole === 'commissioner' ? 'bg-yellow-400' : 'bg-blue-400'
+                      }`}></div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-gray-300">
+                          <span className={`font-medium ${
+                            message.senderRole === 'commissioner' ? 'text-yellow-300' : 'text-white'
+                          }`}>
+                            {message.sender}
+                            {message.senderRole === 'commissioner' && (
+                              <span className="text-xs ml-1">(Commissioner)</span>
+                            )}
+                          </span>
+                          <span className="text-gray-500 ml-2">{message.timestamp}</span>
+                        </div>
+                        <div className="text-sm text-gray-300 break-words">
+                          {message.text}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
               
               <div className="flex gap-2">
@@ -611,20 +659,42 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo }) =>
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 pt-6">
             {userInfo.role === 'commissioner' && (
-              <button
-                onClick={handleStartDraft}
-                className="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-              >
-                Start Draft
-              </button>
-            )}
-            {userInfo.role === 'commissioner' && (
-              <button
-                onClick={() => socket.emit('generate-draft-order')}
-                className="flex-1 px-6 py-4 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium transition-colors"
-              >
-                Generate Draft Order
-              </button>
+              <>
+                {!draftState?.teams || draftState.teams.length === 0 ? (
+                  // Show Create Draft button if no draft exists
+                  <button
+                    onClick={handleCreateDraft}
+                    className="flex-1 px-6 py-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    🚀 Create Draft
+                  </button>
+                ) : !draftState.isDraftStarted ? (
+                  // Show draft management buttons if draft exists but not started
+                  <>
+                    {(!draftState.draftOrder || draftState.draftOrder.length === 0) && (
+                      <button
+                        onClick={() => socket.emit('generate-draft-order')}
+                        className="flex-1 px-6 py-4 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium transition-colors"
+                      >
+                        🎲 Generate Draft Order
+                      </button>
+                    )}
+                    {draftState.draftOrder && draftState.draftOrder.length > 0 && (
+                      <button
+                        onClick={handleStartDraft}
+                        className="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                      >
+                        ▶️ Start Draft
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  // Draft is already started
+                  <div className="flex-1 px-6 py-4 bg-gray-600 text-white rounded-lg font-medium text-center">
+                    Draft In Progress...
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

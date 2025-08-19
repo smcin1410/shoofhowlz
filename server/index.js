@@ -92,6 +92,21 @@ function startDraftTimer() {
     return;
   }
 
+  const currentTeam = getCurrentTeam();
+  if (!currentTeam) {
+    return;
+  }
+
+  // Check if current team is present or should auto-pick
+  if (!currentTeam.isPresent || currentTeam.autoPickEnabled) {
+    console.log(`Auto-picking for ${currentTeam.name} - team not present`);
+    // Auto-pick immediately for absent teams
+    setTimeout(() => {
+      autoDraftPlayer();
+    }, 2000); // Small delay to show the pick announcement
+    return;
+  }
+
   timeRemaining = draftState.defaultTimeClock || 90;
   
   // Clear any existing timer
@@ -142,9 +157,12 @@ function autoDraftPlayer() {
       // Record the pick in history
       draftState.pickHistory.push({
         pickIndex: draftState.currentPick,
+        pickNumber: draftState.currentPick, // Add pickNumber for client compatibility
         teamId: currentTeam.id,
         teamIndex: currentTeam.id - 1, // Add teamIndex for client compatibility
-        player: player
+        team: currentTeam, // Add full team object for pick announcement
+        player: player,
+        isAutoPick: true // Flag to indicate this was an auto-pick
       });
       
       // Move to next pick
@@ -312,26 +330,14 @@ io.on('connection', (socket) => {
     });
   }
   
-  // Handle draft start
-  socket.on('start-draft', (draftConfig) => {
-    console.log('Starting draft with configuration:', draftConfig);
+  // Handle draft creation (setup without starting)
+  socket.on('create-draft', (draftConfig) => {
+    console.log('Creating draft with configuration:', draftConfig);
 
-    // Verify that the user starting the draft is a commissioner
+    // Verify that the user creating the draft is a commissioner
     const commissioner = connectedParticipants.get(socket.id);
     if (!commissioner || commissioner.role !== 'commissioner') {
-      socket.emit('error', 'Only the commissioner can start the draft.');
-      return;
-    }
-
-    // If draft is already started and has an admin password, validate it
-    if (draftState.adminPassword && draftState.adminPassword !== draftConfig.adminPassword) {
-      socket.emit('password-required');
-      return;
-    }
-
-    // If draft is already started and no password provided but one is required
-    if (draftState.adminPassword && !draftConfig.adminPassword) {
-      socket.emit('password-required');
+      socket.emit('error', 'Only the commissioner can create a draft.');
       return;
     }
 
@@ -351,47 +357,51 @@ io.on('connection', (socket) => {
       name: team.name,
       email: team.email,
       roster: [],
-      timeExtensionTokens: tokens
+      timeExtensionTokens: tokens,
+      isPresent: false, // Track if team member is present
+      assignedParticipant: null, // Track which participant controls this team
+      autoPickEnabled: true // Auto-pick when absent
     }));
     
-    // Create draft order based on draft type and league size
-    draftState.draftOrder = [];
+    // Initialize other draft state but don't start the draft
+    draftState.currentPick = 0;
+    draftState.isDraftStarted = false; // Don't start the draft yet
+    draftState.pickHistory = [];
+    draftState.draftOrder = []; // Don't generate order yet
     
-    console.log(`Creating ${draftType} draft for ${leagueSize} teams with ${totalRounds} rounds`);
+    // Broadcast updated state to all clients (they'll stay in lobby)
+    io.emit('draft-state', draftState);
     
-    if (draftType === 'snake') {
-      // Snake draft: 1-12, 12-1, 1-12, etc.
-      for (let round = 1; round <= totalRounds; round++) {
-        if (round % 2 === 1) {
-          // Odd rounds: 1 to leagueSize
-          for (let pick = 1; pick <= leagueSize; pick++) {
-            draftState.draftOrder.push(pick);
-          }
-        } else {
-          // Even rounds: leagueSize to 1
-          for (let pick = leagueSize; pick >= 1; pick--) {
-            draftState.draftOrder.push(pick);
-          }
-        }
-      }
-    } else {
-      // Linear draft: 1-12 for all rounds
-      for (let round = 1; round <= totalRounds; round++) {
-        for (let pick = 1; pick <= leagueSize; pick++) {
-          draftState.draftOrder.push(pick);
-        }
-      }
+    // Auto-save draft state
+    saveDraftState();
+    
+    console.log('Draft created successfully. Ready for participants.');
+  });
+
+  // Handle draft start (when draft is already configured)
+  socket.on('start-draft', () => {
+    console.log('Starting draft...');
+
+    // Verify that the user starting the draft is a commissioner
+    const commissioner = connectedParticipants.get(socket.id);
+    if (!commissioner || commissioner.role !== 'commissioner') {
+      socket.emit('error', 'Only the commissioner can start the draft.');
+      return;
     }
-    
-    // Log first few rounds of draft order for verification
-    console.log('Draft order (first 3 rounds):');
-    for (let round = 0; round < Math.min(3, totalRounds); round++) {
-      const roundStart = round * leagueSize;
-      const roundEnd = roundStart + leagueSize;
-      const roundOrder = draftState.draftOrder.slice(roundStart, roundEnd);
-      console.log(`Round ${round + 1}: [${roundOrder.join(', ')}]`);
+
+    // Check if draft has been created and has teams
+    if (!draftState.teams || draftState.teams.length === 0) {
+      socket.emit('error', 'No draft configuration found. Please create a draft first.');
+      return;
     }
-    
+
+    // Check if draft order has been generated
+    if (!draftState.draftOrder || draftState.draftOrder.length === 0) {
+      socket.emit('error', 'Draft order has not been generated. Please generate the draft order first.');
+      return;
+    }
+
+    // Start the draft
     draftState.currentPick = 0;
     draftState.isDraftStarted = true;
     draftState.pickHistory = [];
@@ -784,6 +794,108 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Handle lobby chat messages
+  socket.on('lobby-chat-message', (message) => {
+    if (connectedParticipants.has(socket.id)) {
+      const participant = connectedParticipants.get(socket.id);
+      
+      const chatMessage = {
+        id: Date.now() + Math.random(), // Unique ID
+        text: message.text,
+        sender: participant.username,
+        timestamp: new Date().toLocaleTimeString(),
+        senderRole: participant.role
+      };
+      
+      // Add to chat history
+      if (!draftState.chatHistory) {
+        draftState.chatHistory = [];
+      }
+      draftState.chatHistory.push(chatMessage);
+      
+      // Keep only last 50 messages
+      if (draftState.chatHistory.length > 50) {
+        draftState.chatHistory = draftState.chatHistory.slice(-50);
+      }
+      
+      // Broadcast to all participants
+      io.emit('lobby-chat-message', chatMessage);
+      
+      console.log(`Chat message from ${participant.username}: ${message.text}`);
+    }
+  });
+
+  // Send chat history to newly connected clients
+  socket.on('request-chat-history', () => {
+    if (draftState.chatHistory && draftState.chatHistory.length > 0) {
+      socket.emit('chat-history', draftState.chatHistory);
+    }
+  });
+
+  // Handle team claiming for late joiners
+  socket.on('claim-team', (data) => {
+    const { teamId } = data;
+    const participant = connectedParticipants.get(socket.id);
+    
+    if (!participant) {
+      socket.emit('error', 'Participant not found');
+      return;
+    }
+
+    const team = draftState.teams.find(t => t.id === teamId);
+    if (!team) {
+      socket.emit('error', 'Team not found');
+      return;
+    }
+
+    // Check if team is already claimed
+    if (team.assignedParticipant && team.assignedParticipant !== socket.id) {
+      socket.emit('error', `${team.name} is already controlled by another participant`);
+      return;
+    }
+
+    // Claim the team
+    team.isPresent = true;
+    team.assignedParticipant = socket.id;
+    team.autoPickEnabled = false; // Disable auto-pick since user is present
+
+    console.log(`${participant.username} claimed control of ${team.name}`);
+
+    // Update participant info
+    participant.controlledTeam = teamId;
+    connectedParticipants.set(socket.id, participant);
+
+    // Broadcast updated state
+    io.emit('draft-state', draftState);
+    io.emit('participants-update', Array.from(connectedParticipants.values()));
+
+    socket.emit('team-claimed', { teamId, teamName: team.name });
+  });
+
+  // Handle releasing team control
+  socket.on('release-team', () => {
+    const participant = connectedParticipants.get(socket.id);
+    
+    if (participant && participant.controlledTeam) {
+      const team = draftState.teams.find(t => t.id === participant.controlledTeam);
+      if (team) {
+        team.isPresent = false;
+        team.assignedParticipant = null;
+        team.autoPickEnabled = true; // Re-enable auto-pick
+
+        console.log(`${participant.username} released control of ${team.name}`);
+
+        // Update participant info
+        participant.controlledTeam = null;
+        connectedParticipants.set(socket.id, participant);
+
+        // Broadcast updated state
+        io.emit('draft-state', draftState);
+        io.emit('participants-update', Array.from(connectedParticipants.values()));
+      }
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
     
@@ -791,6 +903,22 @@ io.on('connection', (socket) => {
     if (connectedParticipants.has(socket.id)) {
       const participant = connectedParticipants.get(socket.id);
       console.log(`${participant.username} left the lobby`);
+      
+      // Release team control if participant was controlling a team
+      if (participant.controlledTeam) {
+        const team = draftState.teams.find(t => t.id === participant.controlledTeam);
+        if (team) {
+          team.isPresent = false;
+          team.assignedParticipant = null;
+          team.autoPickEnabled = true; // Re-enable auto-pick
+          
+          console.log(`Released control of ${team.name} due to disconnect`);
+          
+          // Broadcast updated draft state
+          io.emit('draft-state', draftState);
+        }
+      }
+      
       connectedParticipants.delete(socket.id);
       
       // Broadcast updated participants list

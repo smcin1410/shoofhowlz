@@ -1272,15 +1272,21 @@ Provide instructions to deploy both the client and server applications so they a
 **Priority**: HIGH - Critical for managing distributed draft participants
 
 #### **Step 18.4: Dynamic Draft Order Generation & Announcement System**
-**Status: Planning** [ ]
+**Status: Complete** [x]
 
-**To-Do:**
-- [ ] **Random Draft Order Generator**: Create truly random (no pattern) draft order selection system
-- [ ] **Carousel Animation**: Implement exciting carousel-style draft order revelation
-- [ ] **Pick-by-Pick Announcement**: Display "The 1st pick of the draft goes to..." format for each position
-- [ ] **Draft Order Validation**: Verify draft order matches selected draft type (Snake/Linear)
-- [ ] **Visual Enhancement**: Add engaging animations and sound effects for draft order reveal
-- [ ] **Commissioner Controls**: Add button to trigger draft order generation after all participants are ready
+**Features Implemented:**
+- [x] **Draft Order Generation**: Commissioner-only button to randomly generate the draft order.
+- [x] **Server-Side Logic**: Implemented shuffle algorithm on the server for randomization.
+- [x] **Draft Order Announcement**: Created a new `DraftOrderAnnouncement.jsx` component to display the generated order.
+- [x] **Carousel Animation**: Engaging carousel-style animation to reveal the draft order pick-by-pick.
+- [x] **Real-time Event**: New `draft-order-generated` Socket.IO event to trigger the announcement on all clients.
+
+**Implementation Details:**
+- Added "Generate Draft Order" button to `Lobby.jsx`, visible only to users with the 'commissioner' role.
+- Created `generate-draft-order` event handler in `server/index.js` to shuffle teams and generate snake draft order.
+- Created `DraftOrderAnnouncement.jsx` component with CSS animations for a timed reveal.
+- Integrated the announcement component into `App.jsx` with state management to control its visibility.
+- The server now emits the `draft-order-generated` event to all clients after the order is created.
 
 **Priority**: MEDIUM - Enhances user experience and excitement
 
@@ -1398,6 +1404,23 @@ Begin with Step 18.1 to resolve critical authentication issues. This foundation 
 - Added professional empty state with helpful guidance
 - Fixed localStorage key consistency bug (`savedDrafts` vs `saved-drafts`)
 
+### **Step 18.4: Dynamic Draft Order Generation & Announcement System**
+**Status: Complete** [x]
+
+**Features Implemented:**
+- [x] **Draft Order Generation**: Commissioner-only button to randomly generate the draft order.
+- [x] **Server-Side Logic**: Implemented shuffle algorithm on the server for randomization.
+- [x] **Draft Order Announcement**: Created a new `DraftOrderAnnouncement.jsx` component to display the generated order.
+- [x] **Carousel Animation**: Engaging carousel-style animation to reveal the draft order pick-by-pick.
+- [x] **Real-time Event**: New `draft-order-generated` Socket.IO event to trigger the announcement on all clients.
+
+**Implementation Details:**
+- Added "Generate Draft Order" button to `Lobby.jsx`, visible only to users with the 'commissioner' role.
+- Created `generate-draft-order` event handler in `server/index.js` to shuffle teams and generate snake draft order.
+- Created `DraftOrderAnnouncement.jsx` component with CSS animations for a timed reveal.
+- Integrated the announcement component into `App.jsx` with state management to control its visibility.
+- The server now emits the `draft-order-generated` event to all clients after the order is created.
+
 ### **Technical Architecture Enhancements:**
 
 #### **Server-Side Improvements:**
@@ -1446,9 +1469,130 @@ Begin with Step 18.1 to resolve critical authentication issues. This foundation 
    - Email templates and SMTP integration
    - Pre-registration functionality
 
-2. **Dynamic Draft Order Generation** (Medium Priority)
-   - Truly random draft order selection
-   - Carousel animation for draft order reveal
-   - Exciting "pick-by-pick" announcement system
-
 The Fantasy Football Draft Application now provides a **professional, production-ready experience** with comprehensive user management, enhanced administrative controls, and streamlined draft setup processes!
+
+## Phase 19: Simplified Lobby Configuration & Enhanced User Experience
+
+**Status: Complete** ✅
+
+### **Overview of New Lobby Configuration Process**
+
+The lobby system has been completely redesigned to provide a more intuitive and streamlined experience for commissioners and participants. The new process eliminates confusion around double password prompts and complex setup flows.
+
+#### **New Commissioner Workflow:**
+
+1. **Single Login Process**
+   - Commissioner joins the lobby and creates one admin password during initial login
+   - This password is used throughout the entire draft process
+   - No additional password prompts when starting the draft
+
+2. **Create Draft Button**
+   - Commissioner sets up league configuration (name, size, draft type, rounds, time settings)
+   - Enters team names and optional email addresses
+   - Clicks "🚀 Create Draft" to establish the draft lobby
+   - Draft is created but not started, allowing participants to join
+
+3. **Generate Draft Order**
+   - After all participants are ready, commissioner clicks "🎲 Generate Draft Order"
+   - System randomly shuffles teams and creates snake or linear draft order
+   - Draft order is announced to all participants with animation
+
+4. **Start Draft**
+   - When ready to begin drafting, commissioner clicks "▶️ Start Draft"
+   - Takes everyone directly to the main draft interface
+   - Timer and pick management begins
+
+#### **Enhanced Participant Experience:**
+
+1. **Real-time Lobby Chat**
+   - Participants can chat while waiting in the lobby
+   - Messages are broadcast to all participants in real-time
+   - Commissioner messages are highlighted in yellow
+
+2. **Live Participant Tracking**
+   - Shows all connected participants with ready status
+   - Displays commissioner vs participant roles
+   - Real-time connection status updates
+
+3. **Late Joining Support**
+   - Participants can join even after the draft starts
+   - Auto-pick functionality handles picks for absent participants
+   - Participants can claim team control when they arrive
+   - Seamless transition from auto-pick to manual control
+
+4. **Team Management**
+   - Participants can claim available teams during or after draft start
+   - Auto-pick continues for unclaimed teams
+   - Teams are automatically released when participants disconnect
+
+### **Technical Implementation Details:**
+
+#### **Server-Side Enhancements:**
+```javascript
+// New socket events added:
+- 'create-draft': Creates draft configuration without starting
+- 'lobby-chat-message': Real-time chat broadcasting
+- 'claim-team': Late joiner team claiming
+- 'release-team': Team control release
+```
+
+#### **Enhanced Draft State:**
+```javascript
+// Teams now include presence tracking:
+{
+  id: 1,
+  name: "Team 1",
+  email: "user@example.com",
+  roster: [],
+  timeExtensionTokens: 3,
+  isPresent: false,          // Track if team member is present
+  assignedParticipant: null, // Track which participant controls team
+  autoPickEnabled: true      // Auto-pick when absent
+}
+```
+
+#### **Smart Auto-Pick Logic:**
+- Teams without assigned participants are auto-picked with 2-second delay
+- Present teams get full timer duration
+- Auto-picked selections are flagged for UI display
+- Seamless transition when participants join late
+
+### **Key Benefits of New System:**
+
+1. **Simplified Authentication**: Single password setup eliminates confusion
+2. **Flexible Participation**: Join before, during, or after draft starts
+3. **Real-time Communication**: Built-in chat keeps everyone connected
+4. **Smart Auto-Management**: Handles absent participants gracefully
+5. **Progressive Flow**: Clear steps from setup to draft completion
+6. **Mobile Optimized**: Full responsive design for all devices
+
+### **Updated User Flow:**
+
+#### **For Commissioners:**
+1. Join lobby as Commissioner (create admin password)
+2. Configure league settings and team names
+3. Click "Create Draft" 
+4. Wait for participants to join
+5. Click "Generate Draft Order" when ready
+6. Click "Start Draft" to begin
+
+#### **For Participants:**
+1. Join lobby as Participant (enter username)
+2. Chat and set ready status while waiting
+3. When draft starts, claim a team or join late
+4. Participate in draft with full functionality
+
+#### **For Late Joiners:**
+1. Join the lobby even after draft has started
+2. See available teams and current draft status
+3. Claim an available team to take control
+4. Previous picks were auto-selected, continue normally
+
+### **Real-time Features:**
+- **Live Chat**: Messages broadcast instantly to all participants
+- **Participant Status**: Real-time ready/not ready status updates
+- **Team Claiming**: Instant team assignment and release
+- **Draft Progress**: Live updates of picks and draft board
+- **Connection Monitoring**: Automatic cleanup when participants disconnect
+
+This enhanced lobby system provides a professional, user-friendly experience that handles all edge cases while maintaining simplicity for the core use cases.

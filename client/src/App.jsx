@@ -226,6 +226,7 @@ const MainApp = () => {
           participants={participants}
           userInfo={userInfo}
           setUserInfo={setUserInfo}
+          draftState={draftState}
         />
       </div>
     );
