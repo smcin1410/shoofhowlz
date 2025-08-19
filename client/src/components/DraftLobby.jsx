@@ -48,6 +48,10 @@ const DraftLobby = ({
       // Update local participant state is handled by parent
     });
 
+    socket.on('team-assignments-update', (assignments) => {
+      setTeamAssignments(assignments);
+    });
+
     // Request chat history when joining
     socket.emit('request-chat-history', { draftId: currentDraft?.id });
 
@@ -55,6 +59,7 @@ const DraftLobby = ({
       socket.off('lobby-chat-message');
       socket.off('chat-history');
       socket.off('participants-update');
+      socket.off('team-assignments-update');
     };
   }, [socket, currentDraft?.id]);
 
@@ -91,6 +96,27 @@ const DraftLobby = ({
       assignedUser: userId
     };
     setTeamAssignments(newAssignments);
+    
+    // Emit team assignment to server
+    if (socket) {
+      socket.emit('assign-team', {
+        draftId: currentDraft?.id,
+        teamId: teamIndex + 1,
+        assignedUser: userId,
+        assignedBy: user.username
+      });
+    }
+  };
+
+  const handleClaimTeam = (teamIndex) => {
+    if (socket) {
+      socket.emit('claim-team', {
+        draftId: currentDraft?.id,
+        teamId: teamIndex + 1,
+        userId: user.username,
+        claimedBy: user.username
+      });
+    }
   };
 
   const handleStartDraftFlow = () => {
@@ -209,37 +235,114 @@ const DraftLobby = ({
               </div>
             </div>
 
-            {/* Team Assignments (Commissioner Only) */}
-            {isCommissioner && (
-              <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-                <h2 className="text-xl font-semibold text-white mb-4">Team Assignments</h2>
-                <p className="text-gray-400 text-sm mb-4">
-                  Assign participants to specific teams. Unassigned teams will be available for claiming.
-                </p>
-                <div className="grid md:grid-cols-2 gap-3">
-                  {teamAssignments.map((assignment, index) => (
-                    <div key={index} className="flex items-center space-x-3 p-3 bg-gray-700 rounded">
-                      <span className="text-white font-medium w-20">
-                        Team {assignment.teamId}:
-                      </span>
-                      <span className="text-gray-300 flex-1">{assignment.teamName}</span>
-                      <select
-                        value={assignment.assignedUser || ''}
-                        onChange={(e) => handleAssignTeam(index, e.target.value || null)}
-                        className="bg-gray-600 text-white text-sm px-2 py-1 rounded border border-gray-500"
-                      >
-                        <option value="">Unassigned</option>
-                        {participants.map(participant => (
-                          <option key={participant.id} value={participant.id}>
-                            {participant.username}
-                          </option>
-                        ))}
-                      </select>
+            {/* Team Management */}
+            <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+              <h2 className="text-xl font-semibold text-white mb-4">
+                {isCommissioner ? 'Team Management' : 'Team Selection'}
+              </h2>
+              
+              {isCommissioner ? (
+                <>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Assign participants to teams or mark teams as "Local" for in-person players.
+                  </p>
+                  <div className="grid md:grid-cols-1 gap-3">
+                    {teamAssignments.map((assignment, index) => (
+                      <div key={index} className="flex items-center space-x-3 p-3 bg-gray-700 rounded">
+                        <span className="text-white font-medium w-20">
+                          Team {assignment.teamId}:
+                        </span>
+                        <span className="text-gray-300 flex-1">{assignment.teamName}</span>
+                        <select
+                          value={assignment.assignedUser || ''}
+                          onChange={(e) => handleAssignTeam(index, e.target.value || null)}
+                          className="bg-gray-600 text-white text-sm px-2 py-1 rounded border border-gray-500 min-w-32"
+                        >
+                          <option value="">Available</option>
+                          <option value="LOCAL">🏠 Local Player</option>
+                          {participants.map(participant => (
+                            <option key={participant.id} value={participant.id}>
+                              {participant.username}
+                            </option>
+                          ))}
+                        </select>
+                        {assignment.assignedUser && assignment.assignedUser !== 'LOCAL' && (
+                          <span className="text-green-400 text-xs">✓ Assigned</span>
+                        )}
+                        {assignment.assignedUser === 'LOCAL' && (
+                          <span className="text-blue-400 text-xs">🏠 Local</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Click "Claim" to select your team. You can only claim one team.
+                  </p>
+                  <div className="grid md:grid-cols-1 gap-3">
+                    {teamAssignments.map((assignment, index) => {
+                      const isClaimedByMe = assignment.assignedUser === user.username;
+                      const isClaimed = assignment.assignedUser && assignment.assignedUser !== 'LOCAL';
+                      const isLocal = assignment.assignedUser === 'LOCAL';
+                      const canClaim = !isClaimed && !isLocal;
+                      const alreadyClaimedTeam = teamAssignments.some(t => t.assignedUser === user.username);
+                      
+                      return (
+                        <div key={index} className={`flex items-center justify-between p-3 rounded border ${
+                          isClaimedByMe ? 'bg-green-700 border-green-600' : 
+                          isClaimed ? 'bg-gray-700 border-gray-600' :
+                          isLocal ? 'bg-blue-700 border-blue-600' :
+                          'bg-gray-700 border-gray-600'
+                        }`}>
+                          <div className="flex items-center space-x-3">
+                            <span className="text-white font-medium">
+                              Team {assignment.teamId}: {assignment.teamName}
+                            </span>
+                            {isClaimedByMe && (
+                              <span className="text-green-200 text-sm">✓ Your Team</span>
+                            )}
+                            {isClaimed && !isClaimedByMe && (
+                              <span className="text-gray-400 text-sm">Claimed by {assignment.assignedUser}</span>
+                            )}
+                            {isLocal && (
+                              <span className="text-blue-200 text-sm">🏠 Local Player</span>
+                            )}
+                          </div>
+                          
+                          {canClaim && !alreadyClaimedTeam && (
+                            <button
+                              onClick={() => handleClaimTeam(index)}
+                              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
+                            >
+                              Claim Team
+                            </button>
+                          )}
+                          
+                          {isClaimedByMe && (
+                            <button
+                              onClick={() => handleAssignTeam(index, null)}
+                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+                            >
+                              Release
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {teamAssignments.some(t => t.assignedUser === user.username) && (
+                    <div className="mt-4 p-3 bg-green-800 border border-green-600 rounded">
+                      <p className="text-green-200 text-sm">
+                        ✓ You have claimed your team! You're ready for the draft.
+                      </p>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                  )}
+                </>
+              )}
+            </div>
 
             {/* Start Draft Section (Commissioner Only) */}
             {isCommissioner && (

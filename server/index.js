@@ -68,6 +68,7 @@ const activeDrafts = new Map(); // Map of draftId -> draft state
 const draftParticipants = new Map(); // Map of draftId -> Map of socketId -> participant info
 const draftChatHistory = new Map(); // Map of draftId -> chat messages
 const draftTimers = new Map(); // Map of draftId -> timer info
+const draftTeamAssignments = new Map(); // Map of draftId -> team assignments
 
 // Utility functions
 function generateId() {
@@ -314,6 +315,12 @@ io.on('connection', (socket) => {
     const participantsList = Array.from(participants.values());
     io.to(`draft-${draftId}`).emit('participants-update', participantsList);
 
+    // Send current team assignments to the new user
+    const assignments = draftTeamAssignments.get(draftId);
+    if (assignments) {
+      socket.emit('team-assignments-update', assignments);
+    }
+
     console.log(`${username} joined draft ${draftId} as ${role}`);
   });
 
@@ -358,6 +365,72 @@ io.on('connection', (socket) => {
         // Broadcast updated participants
         const participantsList = Array.from(participants.values());
         io.to(`draft-${draftId}`).emit('participants-update', participantsList);
+      }
+    }
+  });
+
+  // Assign team (Commissioner only)
+  socket.on('assign-team', (data) => {
+    const { draftId, teamId, assignedUser, assignedBy } = data;
+    
+    // Initialize team assignments if they don't exist
+    if (!draftTeamAssignments.has(draftId)) {
+      const draftState = activeDrafts.get(draftId);
+      if (draftState) {
+        const assignments = draftState.teams.map((team, index) => ({
+          teamId: index + 1,
+          teamName: team.name,
+          assignedUser: null
+        }));
+        draftTeamAssignments.set(draftId, assignments);
+      }
+    }
+    
+    const assignments = draftTeamAssignments.get(draftId);
+    if (assignments) {
+      const teamIndex = assignments.findIndex(t => t.teamId === teamId);
+      if (teamIndex !== -1) {
+        assignments[teamIndex].assignedUser = assignedUser;
+        
+        // Broadcast updated assignments
+        io.to(`draft-${draftId}`).emit('team-assignments-update', assignments);
+        
+        console.log(`Team ${teamId} assigned to ${assignedUser} by ${assignedBy}`);
+      }
+    }
+  });
+
+  // Claim team (Participant)
+  socket.on('claim-team', (data) => {
+    const { draftId, teamId, userId, claimedBy } = data;
+    
+    // Initialize team assignments if they don't exist
+    if (!draftTeamAssignments.has(draftId)) {
+      const draftState = activeDrafts.get(draftId);
+      if (draftState) {
+        const assignments = draftState.teams.map((team, index) => ({
+          teamId: index + 1,
+          teamName: team.name,
+          assignedUser: null
+        }));
+        draftTeamAssignments.set(draftId, assignments);
+      }
+    }
+    
+    const assignments = draftTeamAssignments.get(draftId);
+    if (assignments) {
+      const teamIndex = assignments.findIndex(t => t.teamId === teamId);
+      
+      // Check if team is available and user hasn't already claimed a team
+      const alreadyClaimed = assignments.some(t => t.assignedUser === userId);
+      
+      if (teamIndex !== -1 && !assignments[teamIndex].assignedUser && !alreadyClaimed) {
+        assignments[teamIndex].assignedUser = userId;
+        
+        // Broadcast updated assignments
+        io.to(`draft-${draftId}`).emit('team-assignments-update', assignments);
+        
+        console.log(`Team ${teamId} claimed by ${claimedBy}`);
       }
     }
   });
