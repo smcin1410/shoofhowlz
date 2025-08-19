@@ -63,6 +63,9 @@ const POSITION_CAPS = {
   'D/ST': 3
 };
 
+// Connected participants tracking
+let connectedParticipants = new Map(); // Map of socketId -> participant info
+
 // Function to check if a team can draft a player at a specific position
 function canDraftPosition(team, position) {
   const currentCount = team.roster.filter(player => player.position === position).length;
@@ -277,8 +280,23 @@ function initializeDraftState() {
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
   
+  // Add participant to tracking
+  connectedParticipants.set(socket.id, {
+    socketId: socket.id,
+    username: 'Anonymous User',
+    role: 'participant',
+    isReady: false,
+    connectedAt: new Date().toISOString()
+  });
+  
   // Send current draft state to newly connected client
   socket.emit('draft-state', draftState);
+  
+  // Send current participants list
+  socket.emit('participants-update', Array.from(connectedParticipants.values()));
+  
+  // Broadcast participant update to all clients
+  io.emit('participants-update', Array.from(connectedParticipants.values()));
   
   // Only send timer state if timer is actually running and has time remaining
   if (timerInterval && timeRemaining > 0) {
@@ -298,7 +316,14 @@ io.on('connection', (socket) => {
   socket.on('start-draft', (draftConfig) => {
     console.log('Starting draft with configuration:', draftConfig);
 
-    if (draftState.adminPassword && draftState.adminPassword !== draftConfig.adminPassword) {
+    // If draft is already started and has an admin password, validate it
+    if (draftState.isDraftStarted && draftState.adminPassword && draftState.adminPassword !== draftConfig.adminPassword) {
+      socket.emit('password-required');
+      return;
+    }
+
+    // If draft is already started and no password provided but one is required
+    if (draftState.isDraftStarted && draftState.adminPassword && !draftConfig.adminPassword) {
       socket.emit('password-required');
       return;
     }
@@ -691,8 +716,48 @@ io.on('connection', (socket) => {
     }
   });
   
+  // Handle participant join with username
+  socket.on('join-lobby', (data) => {
+    const { username, role } = data;
+    if (connectedParticipants.has(socket.id)) {
+      const participant = connectedParticipants.get(socket.id);
+      participant.username = username || 'Anonymous User';
+      participant.role = role || 'participant';
+      connectedParticipants.set(socket.id, participant);
+      
+      console.log(`${username} joined the lobby as ${role}`);
+      
+      // Broadcast updated participants list
+      io.emit('participants-update', Array.from(connectedParticipants.values()));
+    }
+  });
+
+  // Handle participant ready status
+  socket.on('set-ready-status', (isReady) => {
+    if (connectedParticipants.has(socket.id)) {
+      const participant = connectedParticipants.get(socket.id);
+      participant.isReady = isReady;
+      connectedParticipants.set(socket.id, participant);
+      
+      console.log(`${participant.username} is ${isReady ? 'ready' : 'not ready'}`);
+      
+      // Broadcast updated participants list
+      io.emit('participants-update', Array.from(connectedParticipants.values()));
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
+    
+    // Remove participant from tracking
+    if (connectedParticipants.has(socket.id)) {
+      const participant = connectedParticipants.get(socket.id);
+      console.log(`${participant.username} left the lobby`);
+      connectedParticipants.delete(socket.id);
+      
+      // Broadcast updated participants list
+      io.emit('participants-update', Array.from(connectedParticipants.values()));
+    }
   });
 });
 

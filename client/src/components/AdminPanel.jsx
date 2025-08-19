@@ -10,7 +10,8 @@ const AdminPanel = ({ socket, draftState }) => {
 
   const handleManualPick = () => {
     if (selectedPlayer && socket) {
-      const confirmation = window.confirm(`Are you sure you want to draft ${selectedPlayer.player_name} for the current team?`);
+      const currentTeam = draftState.teams[draftState.draftOrder[draftState.currentPick] - 1];
+      const confirmation = window.confirm(`🎯 Admin Pick Confirmation\n\nDraft ${selectedPlayer.player_name} (${selectedPlayer.position} - ${selectedPlayer.team}) for ${currentTeam?.name}?\n\nThis action cannot be undone.`);
       if (confirmation) {
         socket.emit('admin-draft-player', { playerId: selectedPlayer.rank });
         setSelectedPlayer(null);

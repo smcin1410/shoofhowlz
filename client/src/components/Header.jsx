@@ -126,6 +126,16 @@ const Header = ({ socket, draftState, onReturnToLobby, isCommissioner, onAdminLo
               </button>
             )}
 
+            {/* Commissioner Status Indicator */}
+            {isCommissioner && (
+              <div className="bg-green-600 text-white px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1 border border-green-700 whitespace-nowrap">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="hidden sm:inline">Commissioner</span>
+              </div>
+            )}
+
             <button onClick={() => setIsMuted(!isMuted)} className="p-2 bg-gray-700 hover:bg-gray-600 rounded">
               {isMuted ? (
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15.172a4 4 0 01-5.656 0M18.414 15.172a4 4 0 00-5.656 0M12 12a4 4 0 014 4m-4-4a4 4 0 00-4 4m0 0l-1.172-1.172a1 1 0 00-1.414 1.414L12 18.586l4.172-4.172a1 1 0 00-1.414-1.414L12 17.172V12z" /></svg>

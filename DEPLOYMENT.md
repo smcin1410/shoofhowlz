@@ -80,3 +80,7 @@ We recommend the following services for their ease of use and generous free tier
 ## You're Live!
 
 Your application is now deployed. You and your friends can access the Vercel URL to participate in the draft. Remember to also open the `/display` route on a large screen for your in-person draft!
+
+---
+
+*This guide was last updated following the successful deployment of the application.*

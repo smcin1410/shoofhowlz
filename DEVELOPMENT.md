@@ -1203,3 +1203,143 @@ Configure the application so it's ready to be deployed to a public hosting servi
 
 **Instructions for Cursor:**
 Provide instructions to deploy both the client and server applications so they are accessible on the internet.
+
+## Phase 17: Post-Deployment Bug Fixes
+
+**Status: Complete** ✅
+
+### **Step 17.1: Lobby Stuck on Password Entry Bug Fix**
+**Status: Complete** [x]
+
+**To-Do:**
+- [x] **Investigate Issue**: User reported being unable to start the draft, getting stuck in the lobby after the admin password prompt.
+- [x] **Client-side Fix**: Refactored password handling logic in `client/src/App.jsx` to correctly send the password to the server and handle `password-required` events.
+- [x] **Server-side Fix**: Updated `server/index.js` to properly validate the admin password on the `start-draft` event and emit a `password-required` event on failure.
+- [x] **Deployment**: Pushed the committed fix to the GitHub repository to trigger redeployment on Vercel and Render.
+
+**Implementation Details:**
+- Simplified client-side logic in `App.jsx` by removing redundant password prompts and centralizing draft start logic.
+- Strengthened server-side validation in `index.js` to correctly check the admin password and emit a specific `password-required` event if the check fails.
+- This prevents the application from getting stuck in the lobby and provides clear feedback to the user on password failure.
+
+## Phase 18: Authentication & Draft Setup Enhancement Requirements
+
+**Status: Planning** 📋
+
+### **Critical Issues Identified & Enhancement Requirements:**
+
+#### **Step 18.1: Admin Authentication & Access Control Issues**
+**Status: Planning** [ ]
+
+**Current Issues:**
+- Administrator login issues on lobby page preventing proper access control
+- Page should require authentication before allowing any draft actions
+- Need to restrict draft initiation to commissioner/admin only
+- Missing proper session management for admin privileges
+
+**To-Do:**
+- [ ] **Fix Admin Login Flow**: Resolve current authentication issues preventing admin access on lobby page
+- [ ] **Implement Login Requirement**: Require user authentication before accessing any draft functionality
+- [ ] **Restrict Draft Controls**: Ensure only authenticated commissioner can start drafts
+- [ ] **Session Management**: Implement proper session handling for admin privileges
+- [ ] **Access Control**: Add role-based access control throughout the application
+
+**Priority**: CRITICAL - Core functionality is broken without proper authentication
+
+#### **Step 18.2: Lobby Visibility & Participant Management**
+**Status: Planning** [ ]
+
+**To-Do:**
+- [ ] **Active Lobby Participants**: Display who is currently in the lobby waiting
+- [ ] **Real-time User List**: Show connected users with their status (admin, participant, observer)
+- [ ] **User Authentication**: Implement user login system for all participants
+- [ ] **Participant Status**: Track and display user connection status and readiness
+- [ ] **Admin Dashboard**: Provide admin view of all connected participants
+
+**Priority**: HIGH - Essential for managing draft participants
+
+#### **Step 18.3: Email Invitation & Draft Registration System**
+**Status: Planning** [ ]
+
+**To-Do:**
+- [ ] **Email Invitation System**: Allow commissioner to send email links for specific draft registration
+- [ ] **Unique Draft Links**: Generate unique URLs for each draft that automatically register participants
+- [ ] **Pre-Registration**: Allow users to register for specific drafts in advance
+- [ ] **Late Joiner Support**: Enable participants to join ongoing drafts via email links
+- [ ] **Email Templates**: Create professional email templates for draft invitations
+- [ ] **Registration Confirmation**: Send confirmation emails upon successful registration
+
+**Priority**: HIGH - Critical for managing distributed draft participants
+
+#### **Step 18.4: Dynamic Draft Order Generation & Announcement System**
+**Status: Planning** [ ]
+
+**To-Do:**
+- [ ] **Random Draft Order Generator**: Create truly random (no pattern) draft order selection system
+- [ ] **Carousel Animation**: Implement exciting carousel-style draft order revelation
+- [ ] **Pick-by-Pick Announcement**: Display "The 1st pick of the draft goes to..." format for each position
+- [ ] **Draft Order Validation**: Verify draft order matches selected draft type (Snake/Linear)
+- [ ] **Visual Enhancement**: Add engaging animations and sound effects for draft order reveal
+- [ ] **Commissioner Controls**: Add button to trigger draft order generation after all participants are ready
+
+**Priority**: MEDIUM - Enhances user experience and excitement
+
+#### **Step 18.5: Saved Drafts Enhancement & Management**
+**Status: Planning** [ ]
+
+**To-Do:**
+- [ ] **Pre-populate Saved Drafts**: Display available saved drafts in the "Saved Drafts" card immediately
+- [ ] **Draft Naming System**: Show clear, descriptive names for saved draft configurations
+- [ ] **Draft Metadata**: Display draft date, participant count, and completion status
+- [ ] **Quick Load Functionality**: One-click loading of saved draft configurations
+- [ ] **Draft Organization**: Sort and categorize saved drafts by date and status
+
+**Priority**: MEDIUM - Improves user experience and draft management
+
+### **Technical Implementation Analysis:**
+
+#### **Authentication Architecture Requirements:**
+1. **User Management System**: Implement user accounts, sessions, and role management
+2. **Commissioner Privileges**: Role-based access control with admin-only functions
+3. **Session Persistence**: Maintain authentication state across page refreshes
+4. **Security Measures**: Secure password handling and session management
+
+#### **Email Integration Requirements:**
+1. **SMTP Configuration**: Set up email service for sending invitations
+2. **Link Generation**: Create secure, unique URLs for draft registration
+3. **Database Integration**: Store user registrations and draft associations
+4. **Email Templates**: Professional HTML email templates with branding
+
+#### **Draft Order System Requirements:**
+1. **Randomization Algorithm**: Implement cryptographically secure random number generation
+2. **Animation Framework**: Build carousel animation system for draft order reveal
+3. **State Management**: Track draft order generation and confirmation states
+4. **Validation Logic**: Ensure draft order aligns with selected draft type settings
+
+#### **Enhanced Lobby Management:**
+1. **Real-time Connectivity**: Track and display live participant status
+2. **Ready State Management**: Allow participants to indicate readiness for draft start
+3. **Commissioner Dashboard**: Comprehensive view of all participants and their status
+4. **Dynamic Participant Management**: Add/remove participants as needed
+
+### **Development Priority Order:**
+1. **CRITICAL**: Fix admin authentication issues (Step 18.1)
+2. **HIGH**: Implement lobby participant visibility (Step 18.2)
+3. **HIGH**: Develop email invitation system (Step 18.3)
+4. **MEDIUM**: Create dynamic draft order system (Step 18.4)
+5. **MEDIUM**: Enhance saved drafts functionality (Step 18.5)
+
+### **Notes for Implementation:**
+- These features require significant backend enhancement with user management system
+- Email functionality will require external service integration (SendGrid, Mailgun, etc.)
+- Authentication system needs to be implemented before other features can be properly secured
+- Real-time participant tracking will leverage existing Socket.IO infrastructure
+- Draft order animation system should be modular for easy customization
+
+**Instructions for Cursor:**
+Begin with Step 18.1 to resolve critical authentication issues. This foundation is required before implementing other enhancements. Focus on creating a robust user management system that supports commissioner privileges and participant authentication.
+
+## 🎉 Project Status Update 🎉
+
+**Current Status**: Production-ready with identified enhancement requirements
+**Next Phase**: Authentication & draft setup improvements to address usability issues and add advanced features for better draft management experience.

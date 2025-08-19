@@ -55,6 +55,8 @@ const MainApp = () => {
   const [isCommissioner, setIsCommissioner] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [playPickSound] = useSound('/pick-sound.mp3');
+  const [participants, setParticipants] = useState([]);
+  const [userInfo, setUserInfo] = useState({ username: '', role: 'participant', isReady: false });
 
   // Check for saved draft state only once on app load
   useEffect(() => {
@@ -127,6 +129,17 @@ const MainApp = () => {
       }
     });
 
+    // Listen for participants updates
+    newSocket.on('participants-update', (participantsList) => {
+      setParticipants(participantsList);
+      
+      // Check if current user is a commissioner
+      const currentUser = participantsList.find(p => p.socketId === newSocket.id);
+      if (currentUser && currentUser.role === 'commissioner') {
+        setIsCommissioner(true);
+      }
+    });
+
     return () => {
       newSocket.close();
     };
@@ -134,6 +147,13 @@ const MainApp = () => {
 
   const handleDraftStart = (draftConfig) => {
     console.log('App handleDraftStart called with config:', draftConfig);
+    
+    // If the user set an admin password, automatically grant them commissioner status
+    if (draftConfig.adminPassword) {
+      setIsCommissioner(true);
+      console.log('Admin password set, granting commissioner status');
+    }
+    
     if (socket) {
       console.log('Emitting start-draft to server');
       socket.emit('start-draft', draftConfig);
@@ -164,6 +184,7 @@ const MainApp = () => {
     setIsInLobby(true);
     setIsDraftComplete(false);
     setShowRecoveryMessage(false);
+    setIsCommissioner(false); // Reset commissioner status
     setShowPickAnnouncement(false);
     setLastPick(null);
     
@@ -189,7 +210,13 @@ const MainApp = () => {
   if (isInLobby) {
     return (
       <div className="min-h-screen bg-gray-900">
-        <Lobby onDraftStart={handleDraftStart} />
+        <Lobby 
+          onDraftStart={handleDraftStart} 
+          socket={socket}
+          participants={participants}
+          userInfo={userInfo}
+          setUserInfo={setUserInfo}
+        />
       </div>
     );
   }
