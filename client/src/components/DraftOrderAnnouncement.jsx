@@ -5,17 +5,23 @@ const DraftOrderAnnouncement = ({ draftOrder, teams, onClose, onStartDraft }) =>
   const [isSpinning, setIsSpinning] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState([]);
   const [availableTeams, setAvailableTeams] = useState([]);
-  const [animationPhase, setAnimationPhase] = useState('ready'); // 'ready', 'spinning', 'slowing', 'announcing', 'complete'
+  const [animationPhase, setAnimationPhase] = useState('waiting'); // 'waiting', 'ready', 'spinning', 'slowing', 'announcing', 'complete'
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [showStartButton, setShowStartButton] = useState(false);
   const carouselRef = useRef(null);
   const animationRef = useRef(null);
 
   useEffect(() => {
-    // Initialize available teams (shuffled for randomness)
-    const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
-    setAvailableTeams(shuffledTeams);
-  }, [teams]);
+    // Initialize with only the drafting teams (not all available teams)
+    const draftingTeams = draftOrder.map(teamId => {
+      const team = teams.find(t => t.id === teamId);
+      return team || { id: teamId, name: `Team ${teamId}` };
+    });
+    
+    // Shuffle them for visual randomness in the wheel
+    const shuffledDraftingTeams = [...draftingTeams].sort(() => Math.random() - 0.5);
+    setAvailableTeams(shuffledDraftingTeams);
+  }, [teams, draftOrder]);
 
   useEffect(() => {
     if (animationPhase === 'ready' && availableTeams.length > 0) {
@@ -134,6 +140,10 @@ const DraftOrderAnnouncement = ({ draftOrder, teams, onClose, onStartDraft }) =>
     }
   };
 
+  const handleStartSpinning = () => {
+    setAnimationPhase('ready');
+  };
+
   const getFirstTeamName = () => {
     if (draftOrder.length > 0) {
       return getTeamName(draftOrder[0]);
@@ -149,9 +159,11 @@ const DraftOrderAnnouncement = ({ draftOrder, teams, onClose, onStartDraft }) =>
         <div className="mb-8">
           <h1 className="text-5xl font-bold mb-2 text-blue-400">🎲 Draft Order Reveal</h1>
           <p className="text-xl text-gray-300">
-            {animationPhase === 'complete' 
-              ? 'Draft order is set!' 
-              : `Selecting pick #${currentPickIndex + 1}`
+            {animationPhase === 'waiting' 
+              ? `Ready to reveal draft order for ${draftOrder.length} teams!`
+              : animationPhase === 'complete' 
+                ? 'Draft order is set!' 
+                : `Selecting pick #${currentPickIndex + 1}`
             }
           </p>
         </div>
@@ -162,10 +174,31 @@ const DraftOrderAnnouncement = ({ draftOrder, teams, onClose, onStartDraft }) =>
           {/* Left: Spinning Carousel */}
           <div className="bg-gray-700 rounded-xl p-6">
             <h2 className="text-2xl font-semibold mb-4">
-              {isSpinning ? '🎠 Spinning...' : animationPhase === 'announcing' ? '🎯 Selected!' : '🎪 Ready to Spin'}
+              {animationPhase === 'waiting' 
+                ? '🎪 Ready to Spin' 
+                : isSpinning 
+                  ? '🎠 Spinning...' 
+                  : animationPhase === 'announcing' 
+                    ? '🎯 Selected!' 
+                    : '🎲 Draft Wheel'
+              }
             </h2>
             
-            {availableTeams.length > 0 && animationPhase !== 'complete' ? (
+            {/* Start Button for Waiting State */}
+            {animationPhase === 'waiting' && (
+              <div className="flex flex-col items-center mb-6">
+                <div className="text-6xl mb-4">🎡</div>
+                <p className="text-gray-300 mb-4">Click to start revealing the draft order!</p>
+                <button
+                  onClick={handleStartSpinning}
+                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-bold text-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
+                >
+                  🎲 Start the Wheel!
+                </button>
+              </div>
+            )}
+            
+            {availableTeams.length > 0 && animationPhase !== 'complete' && animationPhase !== 'waiting' ? (
               <div className="relative w-80 h-80 mx-auto">
                 {/* Spinning Wheel Container */}
                 <div 
@@ -260,6 +293,13 @@ const DraftOrderAnnouncement = ({ draftOrder, teams, onClose, onStartDraft }) =>
               Draft Order
             </h2>
             
+            {/* Show team count info */}
+            <div className="mb-4 p-3 bg-blue-900 rounded-lg border border-blue-600">
+              <p className="text-blue-200 text-sm">
+                <strong>{draftOrder.length} Teams</strong> will be revealed in random order
+              </p>
+            </div>
+            
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {selectedTeams.map((pick, index) => (
                 <div 
@@ -290,8 +330,8 @@ const DraftOrderAnnouncement = ({ draftOrder, teams, onClose, onStartDraft }) =>
                     TBD
                   </span>
                   <span className="text-2xl">⏳</span>
-                </div>
-              ))}
+            </div>
+          ))}
             </div>
           </div>
         </div>
@@ -314,12 +354,12 @@ const DraftOrderAnnouncement = ({ draftOrder, teams, onClose, onStartDraft }) =>
                 🏈 Start the Draft!
               </button>
               
-              <button
-                onClick={onClose}
+          <button
+            onClick={onClose}
                 className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-4 rounded-xl font-medium text-lg transition-all duration-200"
-              >
+          >
                 View Order Only
-              </button>
+          </button>
             </div>
           </div>
         )}
