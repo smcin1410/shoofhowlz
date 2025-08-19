@@ -357,13 +357,12 @@ const DraftLobby = ({
                       )}
                     </p>
                     <p className="text-gray-400 text-sm">
-                      Make sure all participants are ready before starting the draft.
+                      Draft can start anytime. Late participants will be auto-picked until they join.
                     </p>
                   </div>
                   <button
                     onClick={handleStartDraftFlow}
-                    disabled={participants.length < 2}
-                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-3 rounded-md font-medium"
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium"
                   >
                     🏈 Start Draft
                   </button>

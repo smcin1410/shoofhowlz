@@ -170,7 +170,7 @@ const CreateDraftModal = ({ user, onClose, onCreateDraft }) => {
             </div>
 
             {/* Draft Settings */}
-            <div className="grid md:grid-cols-4 gap-4">
+            <div className="grid md:grid-cols-5 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   League Size
@@ -236,6 +236,26 @@ const CreateDraftModal = ({ user, onClose, onCreateDraft }) => {
                   <option value={2.5}>2:30</option>
                   <option value={3}>3:00</option>
                   <option value={4}>4:00</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Extension Tokens
+                </label>
+                <select
+                  name="tokens"
+                  value={formData.tokens}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value={0}>0 Tokens</option>
+                  <option value={1}>1 Token</option>
+                  <option value={2}>2 Tokens</option>
+                  <option value={3}>3 Tokens</option>
+                  <option value={4}>4 Tokens</option>
+                  <option value={5}>5 Tokens</option>
+                  <option value={6}>6 Tokens</option>
                 </select>
               </div>
             </div>

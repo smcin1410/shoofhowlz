@@ -253,23 +253,26 @@ function startDraftTimer(draftId) {
     clearInterval(existingTimer.interval);
   }
 
+  const timerState = { interval: null, timeRemaining };
+
   const interval = setInterval(() => {
-    timeRemaining--;
+    timerState.timeRemaining--;
     
     // Broadcast timer update to draft room
     io.to(`draft-${draftId}`).emit('timer-update', {
-      timeRemaining,
-      canExtend: timeRemaining <= 15
+      timeRemaining: timerState.timeRemaining,
+      canExtend: timerState.timeRemaining <= 15
     });
 
-    if (timeRemaining <= 0) {
+    if (timerState.timeRemaining <= 0) {
       clearInterval(interval);
       draftTimers.delete(draftId);
       autoDraftPlayer(draftId);
     }
   }, 1000);
 
-  draftTimers.set(draftId, { interval, timeRemaining });
+  timerState.interval = interval;
+  draftTimers.set(draftId, timerState);
 }
 
 // Admin auto-draft for testing
@@ -499,6 +502,43 @@ io.on('connection', (socket) => {
   socket.on('draft-player', (data) => {
     const { draftId, playerId } = data;
     draftPlayer(draftId, playerId, false);
+  });
+
+  // Time extension
+  socket.on('extend-time', (data) => {
+    // Extract draftId from socket room or data
+    let draftId = data?.draftId;
+    if (!draftId) {
+      // Find draftId from socket rooms
+      const rooms = Array.from(socket.rooms);
+      const draftRoom = rooms.find(room => room.startsWith('draft-'));
+      if (draftRoom) {
+        draftId = draftRoom.replace('draft-', '');
+      }
+    }
+    
+    const timerInfo = draftTimers.get(draftId);
+    const draftState = activeDrafts.get(draftId);
+    
+    if (timerInfo && draftState) {
+      const currentTeam = getCurrentTeam(draftState);
+      if (currentTeam && currentTeam.timeExtensionTokens > 0) {
+        // Add 30 seconds to timer
+        timerInfo.timeRemaining += 30;
+        
+        // Reduce token count
+        currentTeam.timeExtensionTokens--;
+        
+        console.log(`Time extended by 30 seconds for ${currentTeam.name}. Tokens remaining: ${currentTeam.timeExtensionTokens}`);
+        
+        // Broadcast updated state and timer
+        io.to(`draft-${draftId}`).emit('draft-state', draftState);
+        io.to(`draft-${draftId}`).emit('timer-update', {
+          timeRemaining: timerInfo.timeRemaining,
+          canExtend: timerInfo.timeRemaining <= 15
+        });
+      }
+    }
   });
 
   // Admin auto-draft
