@@ -125,6 +125,9 @@ const MainApp = () => {
       newSocket.on('draft-order-generated', (data) => {
         setDraftState(prevState => ({ ...prevState, draftOrder: data.draftOrder }));
         setShowDraftOrderAnnouncement(true);
+        
+        // Store the draft config for starting after animation
+        setDraftConfig(data.draftConfig);
       });
 
       newSocket.on('participants-update', (participantsList) => {
@@ -213,6 +216,15 @@ const MainApp = () => {
     }
   };
 
+  const handleDraftOrderAnnouncementClose = () => {
+    setShowDraftOrderAnnouncement(false);
+    
+    // Auto-start the draft after the announcement
+    if (draftConfig && socket && isCommissioner) {
+      socket.emit('start-draft', draftConfig);
+    }
+  };
+
   // Auto-draft feature for admin testing
   const handleAdminAutoDraft = () => {
     if (user?.isAdmin && socket) {
@@ -253,7 +265,8 @@ const MainApp = () => {
         {showDraftOrderAnnouncement && (
           <DraftOrderAnnouncement
             draftOrder={draftState?.draftOrder || []}
-            onClose={() => setShowDraftOrderAnnouncement(false)}
+            teams={draftState?.teams || []}
+            onClose={handleDraftOrderAnnouncementClose}
           />
         )}
       </>

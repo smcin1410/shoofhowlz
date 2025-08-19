@@ -447,8 +447,13 @@ io.on('connection', (socket) => {
     
     activeDrafts.set(draftConfig.id, draftState);
     
-    // Broadcast draft order generated event
-    io.to(`draft-${draftConfig.id}`).emit('draft-order-generated', { draftOrder });
+    // Broadcast draft order generated event with config for auto-start
+    io.to(`draft-${draftConfig.id}`).emit('draft-order-generated', { 
+      draftOrder, 
+      draftConfig 
+    });
+    
+    console.log(`Draft order generated for draft ${draftConfig.id}:`, draftOrder.slice(0, draftConfig.leagueSize));
   });
 
   // Start draft
