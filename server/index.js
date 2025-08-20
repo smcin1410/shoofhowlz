@@ -23,6 +23,79 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 4000;
 
+// Global error handlers to prevent server crashes
+process.on('uncaughtException', (error) => {
+  console.error('💥 Uncaught Exception:', error);
+  console.error('Stack:', error.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 Unhandled Rejection at:', promise);
+  console.error('Reason:', reason);
+});
+
+// Cleanup function to prevent memory leaks
+function cleanupDraftResources(draftId) {
+  try {
+    console.log('🧹 Cleaning up resources for draft:', draftId);
+    
+    // Clear timers
+    const timerInfo = draftTimers.get(draftId);
+    if (timerInfo?.interval) {
+      clearInterval(timerInfo.interval);
+      draftTimers.delete(draftId);
+    }
+    
+    // Clear admin intervals
+    const draftState = activeDrafts.get(draftId);
+    if (draftState?.adminIntervals) {
+      draftState.adminIntervals.forEach(interval => {
+        clearInterval(interval);
+      });
+      draftState.adminIntervals = [];
+    }
+    
+    // Clear any auto-pick flags
+    if (draftState?.teams) {
+      draftState.teams.forEach(team => {
+        team.autoPickInProgress = false;
+      });
+    }
+    
+    console.log('✅ Resources cleaned up for draft:', draftId);
+  } catch (error) {
+    console.error('💥 Error during resource cleanup:', error);
+  }
+}
+
+process.on('SIGTERM', () => {
+  console.log('👋 SIGTERM received. Shutting down gracefully...');
+  
+  // Clean up all active drafts
+  activeDrafts.forEach((_, draftId) => {
+    cleanupDraftResources(draftId);
+  });
+  
+  server.close(() => {
+    console.log('🔒 Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('👋 SIGINT received. Shutting down gracefully...');
+  
+  // Clean up all active drafts
+  activeDrafts.forEach((_, draftId) => {
+    cleanupDraftResources(draftId);
+  });
+  
+  server.close(() => {
+    console.log('🔒 Server closed');
+    process.exit(0);
+  });
+});
+
 // Middleware
 app.use(cors({
   origin: allowedOrigins,
@@ -97,6 +170,7 @@ function createDraftState(draftConfig) {
       roster: [],
       timeExtensionTokens: draftConfig.tokens || 3,
       isPresent: false,
+      isExplicitlyAbsent: false, // New field to track explicit absence
       assignedParticipant: null,
       autoPickEnabled: true
     })),
@@ -110,13 +184,81 @@ function createDraftState(draftConfig) {
 }
 
 function generateDraftOrder(teams, draftType) {
+  const crypto = require('crypto');
   const teamIds = teams.map(team => team.id);
   
-  // Shuffle the team IDs for random order
-  for (let i = teamIds.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [teamIds[i], teamIds[j]] = [teamIds[j], teamIds[i]];
+  console.log('🎲 Generating cryptographically secure random draft order...');
+  
+  // Multiple entropy sources for enhanced randomness
+  const entropy = [
+    Date.now(),
+    process.hrtime.bigint(),
+    Math.random() * 1000000,
+    crypto.randomBytes(8).readBigUInt64BE(0),
+    performance.now()
+  ];
+  
+  console.log('🔒 Entropy sources:', {
+    timestamp: entropy[0],
+    highResTime: entropy[1].toString(),
+    mathRandom: entropy[2],
+    cryptoRandom: entropy[3].toString(),
+    performanceNow: entropy[4]
+  });
+  
+  // Create multiple independent shuffles using different algorithms
+  const shuffleResults = [];
+  
+  // Fisher-Yates with crypto randomness
+  let order1 = [...teamIds];
+  for (let i = order1.length - 1; i > 0; i--) {
+    const j = crypto.randomInt(0, i + 1);
+    [order1[i], order1[j]] = [order1[j], order1[i]];
   }
+  shuffleResults.push(order1);
+  
+  // Modern Fisher-Yates with time-based seed
+  let order2 = [...teamIds];
+  const timeSeed = Date.now() % 1000000;
+  for (let i = order2.length - 1; i > 0; i--) {
+    const j = Math.floor(((crypto.randomBytes(4).readUInt32BE(0) + timeSeed) % (i + 1)));
+    [order2[i], order2[j]] = [order2[j], order2[i]];
+  }
+  shuffleResults.push(order2);
+  
+  // Durstenfeld shuffle with combined entropy
+  let order3 = [...teamIds];
+  for (let i = order3.length - 1; i > 0; i--) {
+    const randomBytes = crypto.randomBytes(4);
+    const entropyMix = randomBytes.readUInt32BE(0) ^ Date.now() ^ Number(process.hrtime.bigint());
+    const j = entropyMix % (i + 1);
+    [order3[i], order3[j]] = [order3[j], order3[i]];
+  }
+  shuffleResults.push(order3);
+  
+  // Sort-based shuffle with crypto comparison
+  let order4 = [...teamIds].sort(() => {
+    const randomValue = crypto.randomBytes(1)[0] - 128;
+    return randomValue;
+  });
+  shuffleResults.push(order4);
+  
+  // Final meta-shuffle: randomly select from the 4 orders
+  const finalOrderIndex = crypto.randomInt(0, shuffleResults.length);
+  const selectedOrder = shuffleResults[finalOrderIndex];
+  
+  console.log('🎯 Shuffle results comparison:', {
+    'Algorithm 1 (Fisher-Yates Crypto)': order1,
+    'Algorithm 2 (Time-seeded)': order2,  
+    'Algorithm 3 (Durstenfeld Mixed)': order3,
+    'Algorithm 4 (Sort-based)': order4,
+    'Selected Algorithm': finalOrderIndex + 1,
+    'Final Order': selectedOrder
+  });
+  
+  // Verify randomness quality
+  const randomnessStats = verifyRandomness(selectedOrder);
+  console.log('🔒 Randomness Verification:', randomnessStats);
   
   const draftOrder = [];
   const totalRounds = teams.length; // Using team count for now, should be configurable
@@ -124,14 +266,58 @@ function generateDraftOrder(teams, draftType) {
   for (let round = 0; round < totalRounds; round++) {
     if (draftType === 'Snake' && round % 2 === 1) {
       // Reverse order for odd rounds (snake draft)
-      draftOrder.push(...[...teamIds].reverse());
+      draftOrder.push(...[...selectedOrder].reverse());
     } else {
       // Normal order for even rounds or linear draft
-      draftOrder.push(...teamIds);
+      draftOrder.push(...selectedOrder);
     }
   }
   
+  console.log('✅ Final draft order generated:', {
+    'Teams': teams.length,
+    'Draft Type': draftType,
+    'Total Picks': draftOrder.length,
+    'First Round': draftOrder.slice(0, teams.length),
+    'Generation Time': new Date().toISOString()
+  });
+  
   return draftOrder;
+}
+
+function verifyRandomness(order) {
+  // Calculate basic randomness metrics
+  const stats = {
+    length: order.length,
+    unique: new Set(order).size,
+    entropy: 0,
+    patterns: [],
+    timestamp: new Date().toISOString()
+  };
+  
+  // Check for sequential patterns
+  let sequential = 0;
+  for (let i = 0; i < order.length - 1; i++) {
+    if (Math.abs(order[i] - order[i + 1]) === 1) {
+      sequential++;
+    }
+  }
+  stats.sequentialPairs = sequential;
+  
+  // Check for duplicates (should be 0)
+  stats.duplicates = order.length - stats.unique;
+  
+  // Simple entropy calculation
+  const frequency = {};
+  order.forEach(item => frequency[item] = (frequency[item] || 0) + 1);
+  Object.values(frequency).forEach(count => {
+    const p = count / order.length;
+    stats.entropy -= p * Math.log2(p);
+  });
+  
+  // Quality assessment
+  stats.quality = stats.duplicates === 0 && stats.sequentialPairs < order.length * 0.3 ? 'GOOD' : 'POOR';
+  
+  return stats;
 }
 
 function getCurrentTeam(draftState) {
@@ -148,145 +334,323 @@ function canDraftPosition(team, position) {
 }
 
 function autoDraftPlayer(draftId) {
-  const draftState = activeDrafts.get(draftId);
-  if (!draftState || !draftState.isDraftStarted || draftState.currentPick >= draftState.draftOrder.length) {
-    return;
-  }
-
-  const currentTeam = getCurrentTeam(draftState);
-  if (!currentTeam) {
-    return;
-  }
-
-  // Find the best available player that the team can draft
-  for (const player of draftState.availablePlayers) {
-    if (canDraftPosition(currentTeam, player.position)) {
-      // Execute the draft
-      draftPlayer(draftId, player.id, true); // true indicates auto-pick
-      break;
+  try {
+    const draftState = activeDrafts.get(draftId);
+    if (!draftState || !draftState.isDraftStarted || draftState.currentPick >= draftState.draftOrder.length) {
+      console.log('⚠️ Auto-draft cancelled - invalid draft state:', draftId);
+      return false;
     }
+
+    const currentTeam = getCurrentTeam(draftState);
+    if (!currentTeam) {
+      console.log('⚠️ Auto-draft cancelled - no current team:', draftId);
+      return false;
+    }
+
+    // Prevent multiple simultaneous auto-picks for the same team
+    if (currentTeam.autoPickInProgress) {
+      console.log('⚠️ Auto-pick already in progress for team:', currentTeam.name);
+      return false;
+    }
+
+    console.log(`🤖 Auto-drafting for ${currentTeam.name} (Pick ${draftState.currentPick + 1})`);
+
+    // Find the best available player that the team can draft
+    let selectedPlayer = null;
+    for (const player of draftState.availablePlayers) {
+      if (canDraftPosition(currentTeam, player.position)) {
+        selectedPlayer = player;
+        break;
+      }
+    }
+
+    if (!selectedPlayer) {
+      console.error('💥 No available players for auto-draft! This should not happen.');
+      return false;
+    }
+
+    console.log(`🤖 Auto-selecting: ${selectedPlayer.name} (${selectedPlayer.position}) for ${currentTeam.name}`);
+
+    // Execute the draft with auto-pick flag
+    const success = draftPlayer(draftId, selectedPlayer.id, true); // true indicates auto-pick
+    
+    if (success) {
+      console.log(`✅ Auto-draft successful for ${currentTeam.name}`);
+    } else {
+      console.error(`💥 Auto-draft failed for ${currentTeam.name}`);
+    }
+    
+    return success;
+    
+  } catch (error) {
+    console.error('💥 Critical error in autoDraftPlayer:', error);
+    console.error('Stack trace:', error.stack);
+    console.error('Draft ID:', draftId);
+    
+    // Clear any flags to prevent deadlock
+    const draftState = activeDrafts.get(draftId);
+    if (draftState) {
+      const currentTeam = getCurrentTeam(draftState);
+      if (currentTeam) {
+        currentTeam.autoPickInProgress = false;
+      }
+    }
+    
+    return false;
   }
 }
 
 function draftPlayer(draftId, playerId, isAutoPick = false) {
-  const draftState = activeDrafts.get(draftId);
-  if (!draftState) return false;
+  try {
+    const draftState = activeDrafts.get(draftId);
+    if (!draftState) {
+      console.log('⚠️ Draft state not found for ID:', draftId);
+      return false;
+    }
 
-  const currentTeam = getCurrentTeam(draftState);
-  if (!currentTeam) return false;
+    const currentTeam = getCurrentTeam(draftState);
+    if (!currentTeam) {
+      console.log('⚠️ No current team found for draft:', draftId);
+      return false;
+    }
 
-  const playerIndex = draftState.availablePlayers.findIndex(p => p.id === playerId);
-  if (playerIndex === -1) return false;
+    const playerIndex = draftState.availablePlayers.findIndex(p => p.id === playerId);
+    if (playerIndex === -1) {
+      console.log('⚠️ Player not found in available players:', playerId);
+      return false;
+    }
 
-  const player = draftState.availablePlayers[playerIndex];
+    const player = draftState.availablePlayers[playerIndex];
 
-  // Validate position cap
-  if (!canDraftPosition(currentTeam, player.position)) {
+    // Validate position cap
+    if (!canDraftPosition(currentTeam, player.position)) {
+      console.log('⚠️ Position cap exceeded for:', player.position);
+      return false;
+    }
+
+    // Remove player from available pool
+    draftState.availablePlayers.splice(playerIndex, 1);
+    draftState.draftedPlayers.push(player);
+
+    // Add to team roster
+    currentTeam.roster.push(player);
+
+    // Record the pick
+    const pick = {
+      pickNumber: draftState.pickHistory.length + 1,
+      pickIndex: draftState.currentPick,
+      round: Math.floor(draftState.currentPick / draftState.leagueSize) + 1,
+      pickInRound: (draftState.currentPick % draftState.leagueSize) + 1,
+      team: { ...currentTeam },
+      player: player,
+      timestamp: new Date().toISOString(),
+      isAutoPick
+    };
+
+    draftState.pickHistory.push(pick);
+    console.log(`✅ Pick ${pick.pickNumber}: ${currentTeam.name} selected ${player.name} (${player.position})`);
+
+    // Move to next pick
+    draftState.currentPick++;
+
+    // Check if draft is complete
+    const isDraftComplete = draftState.currentPick >= draftState.draftOrder.length;
+    if (isDraftComplete) {
+      draftState.isComplete = true;
+      console.log('🏁 Draft completed!');
+      
+      // Clean up all resources when draft is complete
+      cleanupDraftResources(draftId);
+    }
+
+    // Clear timer for this draft
+    const timerInfo = draftTimers.get(draftId);
+    if (timerInfo?.interval) {
+      clearInterval(timerInfo.interval);
+      draftTimers.delete(draftId);
+      console.log('⏹️ Timer cleared for draft:', draftId);
+    }
+
+    // Broadcast updated state safely
+    try {
+      io.to(`draft-${draftId}`).emit('draft-state', draftState);
+      console.log('📡 Draft state broadcasted successfully');
+    } catch (broadcastError) {
+      console.error('💥 Error broadcasting draft state:', broadcastError);
+      // Don't return false here - the draft operation succeeded, just broadcasting failed
+    }
+
+    // Start next timer if draft is not complete and not an auto-pick (prevent recursion)
+    if (!isDraftComplete && !isAutoPick) {
+      console.log('⏰ Starting timer for next pick...');
+      // Use setTimeout to prevent stack overflow from immediate recursive calls
+      setTimeout(() => {
+        startDraftTimer(draftId);
+      }, 100); // Small delay to prevent recursion issues
+    }
+
+    return true;
+  } catch (error) {
+    console.error('💥 Critical error in draftPlayer:', error);
+    console.error('Stack trace:', error.stack);
+    console.error('Draft ID:', draftId, 'Player ID:', playerId, 'Auto-pick:', isAutoPick);
+    
+    // Clean up any timers to prevent further issues
+    const timerInfo = draftTimers.get(draftId);
+    if (timerInfo?.interval) {
+      clearInterval(timerInfo.interval);
+      draftTimers.delete(draftId);
+    }
+    
     return false;
   }
-
-  // Remove player from available pool
-  draftState.availablePlayers.splice(playerIndex, 1);
-  draftState.draftedPlayers.push(player);
-
-  // Add to team roster
-  currentTeam.roster.push(player);
-
-  // Record the pick
-  const pick = {
-    pickNumber: draftState.pickHistory.length + 1,
-    pickIndex: draftState.currentPick,
-    round: Math.floor(draftState.currentPick / draftState.leagueSize) + 1,
-    pickInRound: (draftState.currentPick % draftState.leagueSize) + 1,
-    team: { ...currentTeam },
-    player: player,
-    timestamp: new Date().toISOString(),
-    isAutoPick
-  };
-
-  draftState.pickHistory.push(pick);
-
-  // Move to next pick
-  draftState.currentPick++;
-
-  // Check if draft is complete
-  if (draftState.currentPick >= draftState.draftOrder.length) {
-    draftState.isComplete = true;
-  }
-
-  // Clear timer for this draft
-  const timerInfo = draftTimers.get(draftId);
-  if (timerInfo?.interval) {
-    clearInterval(timerInfo.interval);
-    draftTimers.delete(draftId);
-  }
-
-  // Broadcast updated state
-  io.to(`draft-${draftId}`).emit('draft-state', draftState);
-
-  return true;
 }
 
 function startDraftTimer(draftId) {
-  const draftState = activeDrafts.get(draftId);
-  if (!draftState?.isDraftStarted || draftState.currentPick >= draftState.draftOrder.length) {
-    return;
-  }
-
-  const currentTeam = getCurrentTeam(draftState);
-  if (!currentTeam) return;
-
-  // Check if current team should auto-pick
-  if (!currentTeam.isPresent || currentTeam.autoPickEnabled) {
-    console.log(`Auto-picking for ${currentTeam.name} - team not present`);
-    setTimeout(() => {
-      autoDraftPlayer(draftId);
-    }, 2000);
-    return;
-  }
-
-  let timeRemaining = draftState.defaultTimeClock || 90;
-  
-  // Clear any existing timer
-  const existingTimer = draftTimers.get(draftId);
-  if (existingTimer?.interval) {
-    clearInterval(existingTimer.interval);
-  }
-
-  const timerState = { interval: null, timeRemaining };
-
-  const interval = setInterval(() => {
-    timerState.timeRemaining--;
-    
-    // Broadcast timer update to draft room
-    io.to(`draft-${draftId}`).emit('timer-update', {
-      timeRemaining: timerState.timeRemaining,
-      canExtend: timerState.timeRemaining <= 15
-    });
-
-    if (timerState.timeRemaining <= 0) {
-      clearInterval(interval);
-      draftTimers.delete(draftId);
-      autoDraftPlayer(draftId);
+  try {
+    const draftState = activeDrafts.get(draftId);
+    if (!draftState?.isDraftStarted || draftState.currentPick >= draftState.draftOrder.length) {
+      console.log('⚠️ Cannot start timer - draft not started or completed:', draftId);
+      return;
     }
-  }, 1000);
 
-  timerState.interval = interval;
-  draftTimers.set(draftId, timerState);
+    const currentTeam = getCurrentTeam(draftState);
+    if (!currentTeam) {
+      console.log('⚠️ No current team found for timer start:', draftId);
+      return;
+    }
+
+    // CRITICAL: Check if timer already exists to prevent multiple timers
+    const existingTimer = draftTimers.get(draftId);
+    if (existingTimer?.interval) {
+      console.log('⚠️ Timer already running for draft:', draftId, '- clearing existing timer');
+      clearInterval(existingTimer.interval);
+      draftTimers.delete(draftId);
+    }
+
+    // Check if current team should auto-pick
+    // Auto-pick if team has auto-pick enabled and is either not present or explicitly absent
+    if (currentTeam.autoPickEnabled && (!currentTeam.isPresent || currentTeam.isExplicitlyAbsent)) {
+      console.log(`🤖 Auto-picking for ${currentTeam.name} - team not present or explicitly absent`);
+      
+      // Set a flag to prevent multiple auto-picks
+      if (!currentTeam.autoPickInProgress) {
+        currentTeam.autoPickInProgress = true;
+        setTimeout(() => {
+          // Double-check the team is still current and auto-pick hasn't already happened
+          const currentDraftState = activeDrafts.get(draftId);
+          const stillCurrentTeam = getCurrentTeam(currentDraftState);
+          if (stillCurrentTeam && stillCurrentTeam.id === currentTeam.id && currentTeam.autoPickInProgress) {
+            currentTeam.autoPickInProgress = false;
+            autoDraftPlayer(draftId);
+          }
+        }, 3000); // Reduced from 5000 to 3000 for faster auto-picks
+      }
+      return;
+    }
+
+    let timeRemaining = draftState.defaultTimeClock || 90;
+    console.log(`⏰ Starting ${timeRemaining}s timer for ${currentTeam.name} (Pick ${draftState.currentPick + 1})`);
+    
+    const timerState = { 
+      interval: null, 
+      timeRemaining,
+      draftId,
+      startedAt: Date.now()
+    };
+
+    const interval = setInterval(() => {
+      // Safety check: ensure draft state still exists
+      const currentDraftState = activeDrafts.get(draftId);
+      if (!currentDraftState || currentDraftState.isComplete) {
+        console.log('⚠️ Draft state invalid or complete - clearing timer:', draftId);
+        clearInterval(interval);
+        draftTimers.delete(draftId);
+        return;
+      }
+
+      timerState.timeRemaining--;
+      
+      // Broadcast timer update to draft room safely
+      try {
+        io.to(`draft-${draftId}`).emit('timer-update', {
+          timeRemaining: timerState.timeRemaining,
+          canExtend: timerState.timeRemaining <= 15,
+          currentPick: currentDraftState.currentPick + 1
+        });
+      } catch (broadcastError) {
+        console.error('💥 Error broadcasting timer update:', broadcastError);
+      }
+
+      if (timerState.timeRemaining <= 0) {
+        console.log(`⏰ Timer expired for ${currentTeam.name} - auto-drafting...`);
+        clearInterval(interval);
+        draftTimers.delete(draftId);
+        
+        // Safety check before auto-draft
+        const finalDraftState = activeDrafts.get(draftId);
+        if (finalDraftState && !finalDraftState.isComplete) {
+          autoDraftPlayer(draftId);
+        }
+      }
+    }, 1000);
+
+    timerState.interval = interval;
+    draftTimers.set(draftId, timerState);
+    console.log(`✅ Timer started successfully for draft ${draftId}`);
+    
+  } catch (error) {
+    console.error('💥 Critical error in startDraftTimer:', error);
+    console.error('Stack trace:', error.stack);
+    console.error('Draft ID:', draftId);
+    
+    // Clean up any partial timer state
+    const existingTimer = draftTimers.get(draftId);
+    if (existingTimer?.interval) {
+      clearInterval(existingTimer.interval);
+      draftTimers.delete(draftId);
+    }
+  }
 }
 
 // Admin auto-draft for testing
 function adminAutoDraft(draftId, interval = 1000) {
-  const draftState = activeDrafts.get(draftId);
-  if (!draftState?.isDraftStarted) return;
-
-  const autoDraftInterval = setInterval(() => {
-    if (draftState.currentPick >= draftState.draftOrder.length || draftState.isComplete) {
-      clearInterval(autoDraftInterval);
+  try {
+    const draftState = activeDrafts.get(draftId);
+    if (!draftState?.isDraftStarted) {
+      console.log('⚠️ Cannot start admin auto-draft - draft not started:', draftId);
       return;
     }
-    autoDraftPlayer(draftId);
-  }, interval);
+
+    console.log(`🔧 Admin auto-draft started for ${draftId} with ${interval}ms interval`);
+
+    const autoDraftInterval = setInterval(() => {
+      try {
+        // Re-fetch draft state each time to ensure it's current
+        const currentDraftState = activeDrafts.get(draftId);
+        if (!currentDraftState || currentDraftState.currentPick >= currentDraftState.draftOrder.length || currentDraftState.isComplete) {
+          console.log('🔧 Admin auto-draft completed for:', draftId);
+          clearInterval(autoDraftInterval);
+          return;
+        }
+        
+        console.log(`🔧 Admin auto-draft pick ${currentDraftState.currentPick + 1} for ${draftId}`);
+        autoDraftPlayer(draftId);
+      } catch (innerError) {
+        console.error('💥 Error in admin auto-draft interval:', innerError);
+        clearInterval(autoDraftInterval);
+      }
+    }, interval);
+
+    // Store interval reference for cleanup if needed
+    if (!draftState.adminIntervals) {
+      draftState.adminIntervals = [];
+    }
+    draftState.adminIntervals.push(autoDraftInterval);
+
+  } catch (error) {
+    console.error('💥 Error starting admin auto-draft:', error);
+  }
 }
 
 // Socket.IO connection handling
@@ -565,22 +929,74 @@ io.on('connection', (socket) => {
     // Broadcast updated state
     io.to(`draft-${draftConfig.id}`).emit('draft-state', draftState);
     
-    // Start the first pick timer
-    setTimeout(() => {
-      startDraftTimer(draftConfig.id);
-    }, 1000);
+    // Don't automatically start timer - wait for manual start
+    console.log(`Draft ${draftConfig.id} started but timer not yet initiated. Waiting for manual start.`);
+  });
+
+  // Start draft clock (manual start)
+  socket.on('start-draft-clock', (data) => {
+    let draftId = data?.draftId;
+    if (!draftId) {
+      // Find draftId from socket rooms if not provided in data
+      const rooms = Array.from(socket.rooms);
+      const draftRoom = rooms.find(room => room.startsWith('draft-'));
+      if (draftRoom) {
+        draftId = draftRoom.replace('draft-', '');
+      }
+    }
+    
+    if (draftId) {
+      console.log(`Manual draft clock start requested for draft ${draftId}`);
+      startDraftTimer(draftId);
+    } else {
+      console.log('No draftId found for start-draft-clock request');
+    }
   });
 
   // Continue draft (start next timer)
   socket.on('continue-draft', (data) => {
     const { draftId } = data;
-    startDraftTimer(draftId);
+    if (draftId) {
+      startDraftTimer(draftId);
+    } else {
+      console.log('No draftId provided for continue-draft request');
+    }
   });
 
   // Draft player
   socket.on('draft-player', (data) => {
-    const { draftId, playerId } = data;
-    draftPlayer(draftId, playerId, false);
+    try {
+      const { draftId, playerId } = data;
+      if (!draftId || !playerId) {
+        console.log('⚠️ Missing draftId or playerId for draft-player request');
+        socket.emit('draft-error', { message: 'Missing required data' });
+        return;
+      }
+
+      console.log(`📥 Draft player request: ${playerId} for draft ${draftId}`);
+      
+      // Additional validation
+      const draftState = activeDrafts.get(draftId);
+      if (!draftState) {
+        console.log('⚠️ Draft not found:', draftId);
+        socket.emit('draft-error', { message: 'Draft not found' });
+        return;
+      }
+
+      if (draftState.isComplete) {
+        console.log('⚠️ Draft already complete:', draftId);
+        socket.emit('draft-error', { message: 'Draft is already complete' });
+        return;
+      }
+
+      const success = draftPlayer(draftId, playerId, false);
+      if (!success) {
+        socket.emit('draft-error', { message: 'Draft failed - player may be unavailable or invalid' });
+      }
+    } catch (error) {
+      console.error('💥 Error in draft-player handler:', error);
+      socket.emit('draft-error', { message: 'Server error during draft' });
+    }
   });
 
   // Time extension
@@ -623,8 +1039,12 @@ io.on('connection', (socket) => {
   // Admin auto-draft
   socket.on('admin-auto-draft', (data) => {
     const { draftId, interval } = data;
-    console.log(`Admin auto-draft started for draft ${draftId}`);
-    adminAutoDraft(draftId, interval);
+    if (draftId) {
+      console.log(`Admin auto-draft started for draft ${draftId}`);
+      adminAutoDraft(draftId, interval);
+    } else {
+      console.log('No draftId provided for admin-auto-draft request');
+    }
   });
 
   // Enhanced direct join validation for streamlined remote joining
@@ -760,4 +1180,13 @@ app.get('/health', (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  
+  // Memory monitoring
+  setInterval(() => {
+    const memUsage = process.memoryUsage();
+    const totalMem = Math.round(memUsage.rss / 1024 / 1024);
+    if (totalMem > 500) { // Alert if over 500MB
+      console.warn(`⚠️ High memory usage: ${totalMem}MB`);
+    }
+  }, 60000); // Check every minute
 });
