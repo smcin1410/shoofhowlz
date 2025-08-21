@@ -23,15 +23,45 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 4000;
 
-// Global error handlers to prevent server crashes
+// Enhanced global error handlers with connection tracking
+let connectionErrors = [];
+let timerErrors = [];
+
 process.on('uncaughtException', (error) => {
-  console.error('💥 Uncaught Exception:', error);
+  console.error('💥 CRITICAL UNCAUGHT EXCEPTION:', error);
   console.error('Stack:', error.stack);
+  console.error('Active Drafts:', activeDrafts.size);
+  console.error('Active Timers:', draftTimers.size);
+  console.error('Time:', new Date().toISOString());
+  
+  // Track connection-related errors
+  if (error.message && (error.message.includes('socket') || error.message.includes('connection'))) {
+    connectionErrors.push({
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString(),
+      activeDrafts: activeDrafts.size,
+      activeTimers: draftTimers.size
+    });
+  }
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('💥 Unhandled Rejection at:', promise);
+  console.error('💥 CRITICAL UNHANDLED REJECTION:', promise);
   console.error('Reason:', reason);
+  console.error('Active Drafts:', activeDrafts.size);
+  console.error('Active Timers:', draftTimers.size);
+  console.error('Time:', new Date().toISOString());
+  
+  // Track timer-related rejections
+  if (reason && (reason.toString().includes('timer') || reason.toString().includes('interval'))) {
+    timerErrors.push({
+      reason: reason.toString(),
+      timestamp: new Date().toISOString(),
+      activeDrafts: activeDrafts.size,
+      activeTimers: draftTimers.size
+    });
+  }
 });
 
 // Cleanup function to prevent memory leaks
@@ -169,10 +199,10 @@ function createDraftState(draftConfig) {
       email: draftConfig.invitedEmails?.[index] || '',
       roster: [],
       timeExtensionTokens: draftConfig.tokens || 3,
-      isPresent: false,
+      isPresent: true, // Changed from false to true - teams are present by default
       isExplicitlyAbsent: false, // New field to track explicit absence
       assignedParticipant: null,
-      autoPickEnabled: true
+      autoPickEnabled: false // Changed from true to false - auto-pick disabled by default
     })),
     draftOrder: [],
     currentPick: 0,
@@ -471,22 +501,64 @@ function draftPlayer(draftId, playerId, isAutoPick = false) {
       console.log('⏹️ Timer cleared for draft:', draftId);
     }
 
-    // Broadcast updated state safely
+    // Broadcast updated state with connection failure protection
     try {
+      const connectedClients = io.sockets.adapter.rooms.get(`draft-${draftId}`)?.size || 0;
+      console.log(`📡 Broadcasting draft state to ${connectedClients} clients`);
+      
+      if (connectedClients === 0) {
+        console.warn('⚠️ No connected clients for draft state broadcast - draft may be orphaned');
+      }
+      
       io.to(`draft-${draftId}`).emit('draft-state', draftState);
-      console.log('📡 Draft state broadcasted successfully');
+      console.log('✅ Draft state broadcasted successfully');
+      
     } catch (broadcastError) {
-      console.error('💥 Error broadcasting draft state:', broadcastError);
-      // Don't return false here - the draft operation succeeded, just broadcasting failed
+      console.error('💥 CRITICAL DRAFT STATE BROADCAST ERROR:', broadcastError);
+      console.error('Draft ID:', draftId);
+      console.error('Player ID:', playerId);
+      console.error('Connected clients:', io.sockets.adapter.rooms.get(`draft-${draftId}`)?.size || 'NONE');
+      console.error('Stack:', broadcastError.stack);
+      
+      // Track critical broadcast failures
+      connectionErrors.push({
+        error: `Draft state broadcast failed: ${broadcastError.message}`,
+        draftId,
+        playerId,
+        timestamp: new Date().toISOString(),
+        connectedClients: io.sockets.adapter.rooms.get(`draft-${draftId}`)?.size || 0,
+        critical: true
+      });
+      
+      // Continue execution - the draft operation succeeded, just broadcasting failed
     }
 
     // Start next timer if draft is not complete and not an auto-pick (prevent recursion)
     if (!isDraftComplete && !isAutoPick) {
-      console.log('⏰ Starting timer for next pick...');
-      // Use setTimeout to prevent stack overflow from immediate recursive calls
+      console.log('⏰ Scheduling timer for next pick...');
+      console.log(`🔍 TIMER DEBUG: Will start timer after delay - current pick ${draftState.currentPick + 1}`);
+      
+      // CRITICAL FIX: Use longer delay and check for existing timers before creating new ones
       setTimeout(() => {
+        console.log(`🔍 TIMER DEBUG: Timeout triggered - checking if timer should start`);
+        
+        // Double-check draft state before starting new timer
+        const currentDraftState = activeDrafts.get(draftId);
+        if (!currentDraftState || currentDraftState.isComplete) {
+          console.log('⚠️ Draft completed during timer delay - skipping timer start');
+          return;
+        }
+        
+        // Check if a timer is already running (race condition protection)
+        const existingTimer = draftTimers.get(draftId);
+        if (existingTimer?.interval) {
+          console.log('⚠️ Timer already exists during delayed start - skipping');
+          return;
+        }
+        
+        console.log('✅ Safe to start next timer');
         startDraftTimer(draftId);
-      }, 100); // Small delay to prevent recursion issues
+      }, 500); // Increased delay to prevent rapid timer creation
     }
 
     return true;
@@ -507,6 +579,9 @@ function draftPlayer(draftId, playerId, isAutoPick = false) {
 }
 
 function startDraftTimer(draftId) {
+  console.log(`🔍 TIMER DEBUG: startDraftTimer called for draft ${draftId}`);
+  console.log(`🔍 TIMER DEBUG: Current active timers: ${draftTimers.size}`);
+  
   try {
     const draftState = activeDrafts.get(draftId);
     if (!draftState?.isDraftStarted || draftState.currentPick >= draftState.draftOrder.length) {
@@ -520,18 +595,28 @@ function startDraftTimer(draftId) {
       return;
     }
 
-    // CRITICAL: Check if timer already exists to prevent multiple timers
+    // CRITICAL FIX: Use atomic timer management to prevent race conditions
     const existingTimer = draftTimers.get(draftId);
     if (existingTimer?.interval) {
-      console.log('⚠️ Timer already running for draft:', draftId, '- clearing existing timer');
-      clearInterval(existingTimer.interval);
+      console.log('🔥 RACE CONDITION DETECTED: Timer already running for draft:', draftId);
+      console.log('🔥 Existing timer started at:', new Date(existingTimer.startedAt).toISOString());
+      console.log('🔥 Time elapsed:', Date.now() - existingTimer.startedAt, 'ms');
+      
+      // Force clear the existing timer
+      try {
+        clearInterval(existingTimer.interval);
+        console.log('✅ Successfully cleared existing timer');
+      } catch (clearError) {
+        console.error('💥 Error clearing existing timer:', clearError);
+      }
       draftTimers.delete(draftId);
+      console.log('✅ Deleted timer from map');
     }
 
     // Check if current team should auto-pick
-    // Auto-pick if team has auto-pick enabled and is either not present or explicitly absent
-    if (currentTeam.autoPickEnabled && (!currentTeam.isPresent || currentTeam.isExplicitlyAbsent)) {
-      console.log(`🤖 Auto-picking for ${currentTeam.name} - team not present or explicitly absent`);
+    // Only auto-pick if team is explicitly marked as absent AND has auto-pick enabled
+    if (currentTeam.autoPickEnabled && currentTeam.isExplicitlyAbsent) {
+      console.log(`🤖 Auto-picking for ${currentTeam.name} - team explicitly absent`);
       
       // Set a flag to prevent multiple auto-picks
       if (!currentTeam.autoPickInProgress) {
@@ -544,7 +629,7 @@ function startDraftTimer(draftId) {
             currentTeam.autoPickInProgress = false;
             autoDraftPlayer(draftId);
           }
-        }, 3000); // Reduced from 5000 to 3000 for faster auto-picks
+        }, 10000); // Increased to 10 seconds to give more time
       }
       return;
     }
@@ -571,15 +656,46 @@ function startDraftTimer(draftId) {
 
       timerState.timeRemaining--;
       
-      // Broadcast timer update to draft room safely
+      // Broadcast timer update to draft room with enhanced error tracking
       try {
+        const connectedSockets = io.sockets.adapter.rooms.get(`draft-${draftId}`)?.size || 0;
+        console.log(`📡 Broadcasting timer update to ${connectedSockets} clients in draft-${draftId}`);
+        
         io.to(`draft-${draftId}`).emit('timer-update', {
           timeRemaining: timerState.timeRemaining,
           canExtend: timerState.timeRemaining <= 15,
           currentPick: currentDraftState.currentPick + 1
         });
+        
+        // Track successful broadcasts
+        if (timerState.timeRemaining % 10 === 0) {
+          console.log(`✅ Timer broadcast successful at ${timerState.timeRemaining}s remaining`);
+        }
+        
       } catch (broadcastError) {
-        console.error('💥 Error broadcasting timer update:', broadcastError);
+        console.error('💥 CRITICAL TIMER BROADCAST ERROR:', broadcastError);
+        console.error('Draft ID:', draftId);
+        console.error('Time remaining:', timerState.timeRemaining);
+        console.error('Connected clients:', io.sockets.adapter.rooms.get(`draft-${draftId}`)?.size || 'NONE');
+        console.error('Stack:', broadcastError.stack);
+        
+        // Track broadcast errors
+        connectionErrors.push({
+          error: `Timer broadcast failed: ${broadcastError.message}`,
+          draftId,
+          timeRemaining: timerState.timeRemaining,
+          timestamp: new Date().toISOString(),
+          connectedClients: io.sockets.adapter.rooms.get(`draft-${draftId}`)?.size || 0
+        });
+        
+        // If broadcast fails consistently, clear the timer to prevent spam
+        if (timerState.broadcastErrors > 5) {
+          console.error('💥 Too many broadcast errors - clearing timer to prevent cascade failure');
+          clearInterval(interval);
+          draftTimers.delete(draftId);
+          return;
+        }
+        timerState.broadcastErrors = (timerState.broadcastErrors || 0) + 1;
       }
 
       if (timerState.timeRemaining <= 0) {
@@ -1175,7 +1291,25 @@ app.get('/api/players', (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    activeDrafts: activeDrafts.size,
+    activeTimers: draftTimers.size,
+    connectionErrors: connectionErrors.length,
+    timerErrors: timerErrors.length
+  });
+});
+
+// Debug endpoint to monitor connection issues
+app.get('/debug/errors', (req, res) => {
+  res.json({
+    connectionErrors: connectionErrors.slice(-10), // Last 10 connection errors
+    timerErrors: timerErrors.slice(-10), // Last 10 timer errors
+    activeDrafts: Array.from(activeDrafts.keys()),
+    activeTimers: Array.from(draftTimers.keys()),
+    currentTime: new Date().toISOString()
+  });
 });
 
 server.listen(PORT, () => {

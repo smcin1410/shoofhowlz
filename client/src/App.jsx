@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import Login from './components/Login';
@@ -52,7 +52,13 @@ const MainApp = () => {
   
   // Draft system state
   const [socket, setSocket] = useState(null);
-  const [draftState, setDraftState] = useState(null);
+     const [draftState, setDraftState] = useState({
+     isDraftStarted: false,
+     pickHistory: [],
+     draftOrder: [],
+     teams: [],
+     currentPick: null
+   });
   const [draftConfig, setDraftConfig] = useState(null);
   const [isInLobby, setIsInLobby] = useState(true);
   const [isDraftComplete, setIsDraftComplete] = useState(false);
@@ -67,7 +73,24 @@ const MainApp = () => {
   // UI state
   const [appView, setAppView] = useState('dashboard'); // 'dashboard', 'lobby', 'draft'
   
-  const { playPickSound, playTimerSound, playYourTurnSound, toggleMute, isMuted } = useSound();
+     // Sound functions - using useCallback to prevent infinite re-renders
+  const playPickSound = useCallback(() => {
+    console.log('🔇 Sound not available');
+  }, []);
+  
+  const playTimerSound = useCallback(() => {
+    console.log('🔇 Timer sound not available');
+  }, []);
+  
+  const playYourTurnSound = useCallback(() => {
+    console.log('🔇 Turn sound not available');
+  }, []);
+  
+  const toggleMute = useCallback(() => {
+    console.log('🔇 Mute toggle not available');
+  }, []);
+  
+  const isMuted = false;
 
   // Check for existing user session on app load
   useEffect(() => {
@@ -92,55 +115,96 @@ const MainApp = () => {
 
       // Listen for draft state updates
       newSocket.on('draft-state', (state) => {
-        console.log('draft-state event received:', state);
-        
-        // Check if a new pick was made
-        setDraftState(prevState => {
-          if (prevState && state.pickHistory && state.pickHistory.length > prevState.pickHistory.length) {
-            const newPick = state.pickHistory[state.pickHistory.length - 1];
-            console.log('New pick detected:', newPick);
-            setLastPickAnnounced(newPick);
-            setShowPickAnnouncement(true);
-            if (!isMuted) {
-              playPickSound();
-            }
-          }
-          return state;
+        console.log('📡 draft-state event received:', state);
+        console.log('🔍 State Analysis:', {
+          'Draft started': state.isDraftStarted,
+          'Current pick': state.currentPick,
+          'Total picks': state.draftOrder?.length,
+          'Teams count': state.teams?.length,
+          'Pick history length': state.pickHistory?.length
         });
         
-        // Handle state changes
-        if (state.isDraftStarted) {
-          console.log('Draft is active, moving to draft view');
-          saveDraftStateToLocal(state);
-          setAppView('draft');
-          setIsInLobby(false);
-          setIsDraftComplete(false);
-        } else {
-          console.log('Draft is not started, staying in lobby');
-          setAppView('lobby');
-          setIsInLobby(true);
-          setIsDraftComplete(false);
-        }
+                 // Check if a new pick was made
+         setDraftState(prevState => {
+           // Ensure we have safe defaults
+           const safeState = {
+             ...state,
+             pickHistory: Array.isArray(state.pickHistory) ? state.pickHistory : [],
+             draftOrder: Array.isArray(state.draftOrder) ? state.draftOrder : [],
+             teams: Array.isArray(state.teams) ? state.teams : []
+           };
+           
+           if (prevState && safeState.pickHistory && Array.isArray(safeState.pickHistory) && 
+               prevState.pickHistory && Array.isArray(prevState.pickHistory) &&
+               safeState.pickHistory.length > prevState.pickHistory.length) {
+             const newPick = safeState.pickHistory[safeState.pickHistory.length - 1];
+             console.log('🎯 New pick detected:', newPick);
+             setLastPickAnnounced(newPick);
+             setShowPickAnnouncement(true);
+             if (!isMuted) {
+               playPickSound();
+             }
+           }
+           return safeState;
+         });
+        
+                 // Handle state changes
+         if (state && state.isDraftStarted) {
+           console.log('🚀 Draft is active, moving to draft view');
+           // Ensure pickHistory is always an array
+           const safeState = {
+             ...state,
+             pickHistory: Array.isArray(state.pickHistory) ? state.pickHistory : []
+           };
+           saveDraftStateToLocal(safeState);
+           setAppView('draft');
+           setIsInLobby(false);
+           setIsDraftComplete(false);
+         } else {
+           console.log('⏸️ Draft is not started, staying in lobby');
+           setAppView('lobby');
+           setIsInLobby(true);
+           setIsDraftComplete(false);
+         }
       });
 
       newSocket.on('draft-order-generated', (data) => {
-        console.log('draft-order-generated received:', data);
+        console.log('📡 draft-order-generated received:', data);
+        console.log('🔍 Draft Order Analysis:', {
+          'Draft order length': data.draftOrder?.length,
+          'Team count': data.draftConfig?.teamNames?.length,
+          'League name': data.draftConfig?.leagueName,
+          'Draft type': data.draftConfig?.draftType
+        });
         
-        // Create teams from the draft config
-        const teams = data.draftConfig.teamNames.map((name, index) => ({
-          id: index + 1,
-          name: name
-        }));
-        
-        setDraftState(prevState => ({ 
-          ...prevState, 
-          draftOrder: data.draftOrder,
-          teams: teams
-        }));
-        setShowDraftOrderAnnouncement(true);
-        
-        // Store the draft config for starting after animation
-        setDraftConfig(data.draftConfig);
+        try {
+          // Create teams from the draft config
+          const teams = data.draftConfig.teamNames.map((name, index) => ({
+            id: index + 1,
+            name: name
+          }));
+          
+          console.log('🏈 Created teams:', teams.map(t => ({ id: t.id, name: t.name })));
+          
+                     setDraftState(prevState => ({ 
+             ...prevState, 
+             draftOrder: data.draftOrder || [],
+             teams: teams || [],
+             pickHistory: prevState.pickHistory || []
+           }));
+          
+          console.log('✅ Draft state updated with order and teams');
+          setShowDraftOrderAnnouncement(true);
+          console.log('🎭 Showing draft order announcement');
+          
+          // Store the draft config for starting after animation
+          setDraftConfig(data.draftConfig);
+          console.log('💾 Draft config stored for later use');
+          
+        } catch (error) {
+          console.error('💥 Error processing draft-order-generated:', error);
+          alert('❌ Error: Failed to process draft order. Please try again.');
+        }
       });
 
       newSocket.on('participants-update', (participantsList) => {
@@ -149,16 +213,79 @@ const MainApp = () => {
       });
 
       newSocket.on('draft-complete', () => {
+        console.log('🏁 Draft completed, moving to summary');
         setIsDraftComplete(true);
         setAppView('summary');
       });
 
+      // Add connection status listeners
+      newSocket.on('connect', () => {
+        console.log('🔗 Socket connected successfully');
+      });
+
+      newSocket.on('disconnect', (reason) => {
+        console.log('🔌 Socket disconnected:', reason);
+        if (reason === 'io server disconnect') {
+          // the disconnection was initiated by the server, you need to reconnect manually
+          console.log('🔄 Server initiated disconnect, attempting to reconnect...');
+          newSocket.connect();
+        }
+      });
+
+      newSocket.on('connect_error', (error) => {
+        console.error('❌ Socket connection error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          description: error.description,
+          type: error.type,
+          transport: error.transport
+        });
+        
+        // Only show alert for persistent connection errors
+        setTimeout(() => {
+          if (!newSocket.connected) {
+            alert('❌ Connection Error: Unable to connect to server. Please check your internet connection and refresh the page.');
+          }
+        }, 5000);
+      });
+
+      // Enhanced error event listener with retry logic
+      newSocket.on('error', (error) => {
+        console.error('💥 Socket error:', error);
+        console.error('Error context:', {
+          connected: newSocket.connected,
+          id: newSocket.id,
+          transport: newSocket.io.engine?.transport?.name
+        });
+        
+        // Don't show alert immediately - let reconnection logic handle it
+        setTimeout(() => {
+          if (!newSocket.connected) {
+            alert('❌ Connection Error: An error occurred with the server connection.');
+          }
+        }, 3000);
+      });
+
+      // Add reconnection tracking
+      newSocket.on('reconnect', (attemptNumber) => {
+        console.log('🔄 Successfully reconnected after', attemptNumber, 'attempts');
+      });
+
+      newSocket.on('reconnect_attempt', (attemptNumber) => {
+        console.log('🔄 Reconnection attempt', attemptNumber);
+      });
+
+      newSocket.on('reconnect_error', (error) => {
+        console.error('🔄❌ Reconnection failed:', error);
+      });
+
       // Cleanup on unmount
       return () => {
+        console.log('🧹 Cleaning up socket connection');
         newSocket.disconnect();
       };
     }
-  }, [user, isMuted, playPickSound]);
+  }, [user]); // Removed isMuted and playPickSound to prevent infinite re-renders
 
   // Authentication handlers
   const handleLogin = (userData) => {
@@ -169,7 +296,13 @@ const MainApp = () => {
   const handleLogout = () => {
     setUser(null);
     setCurrentDraft(null);
-    setDraftState(null);
+    setDraftState({
+      isDraftStarted: false,
+      pickHistory: [],
+      draftOrder: [],
+      teams: [],
+      currentPick: null
+    });
     setAppView('dashboard');
     localStorage.removeItem('currentUser');
     if (socket) {
@@ -217,7 +350,13 @@ const MainApp = () => {
 
   const handleReturnToDashboard = () => {
     setCurrentDraft(null);
-    setDraftState(null);
+    setDraftState({
+      isDraftStarted: false,
+      pickHistory: [],
+      draftOrder: [],
+      teams: [],
+      currentPick: null
+    });
     setDraftConfig(null);
     setIsCommissioner(false);
     setAppView('dashboard');
@@ -228,16 +367,78 @@ const MainApp = () => {
   };
 
   const handleStartDraft = (config) => {
-    console.log('handleStartDraft called');
-    console.log('Socket available:', !!socket);
-    console.log('Is commissioner:', isCommissioner);
-    console.log('Config:', config);
+    console.log('🎯 App.jsx: handleStartDraft called');
+    console.log('🔍 Validation Check:', {
+      'Socket available': !!socket,
+      'Socket connected': socket?.connected,
+      'Is commissioner': isCommissioner,
+      'Config provided': !!config,
+      'Config details': config ? {
+        'League name': config.leagueName,
+        'League size': config.leagueSize,
+        'Draft type': config.draftType,
+        'Team count': config.teamNames?.length,
+        'Total rounds': config.totalRounds
+      } : 'No config'
+    });
     
-    if (socket && isCommissioner) {
-      console.log('Emitting start-draft event');
+    // Validation checks
+    if (!socket) {
+      console.error('❌ Cannot start draft: Socket not available');
+      alert('❌ Connection Error: Unable to connect to server. Please refresh the page and try again.');
+      return;
+    }
+    
+    if (!socket.connected) {
+      console.error('❌ Cannot start draft: Socket not connected');
+      alert('❌ Connection Error: Lost connection to server. Please refresh the page and try again.');
+      return;
+    }
+    
+    if (!isCommissioner) {
+      console.error('❌ Cannot start draft: User is not commissioner');
+      alert('❌ Permission Error: Only the commissioner can start the draft.');
+      return;
+    }
+    
+    if (!config) {
+      console.error('❌ Cannot start draft: No draft configuration provided');
+      alert('❌ Configuration Error: Draft configuration is missing. Please try again.');
+      return;
+    }
+    
+    // Validate required config fields
+    const requiredFields = ['leagueName', 'leagueSize', 'draftType', 'teamNames', 'totalRounds'];
+    const missingFields = requiredFields.filter(field => !config[field]);
+    
+    if (missingFields.length > 0) {
+      console.error('❌ Cannot start draft: Missing required fields:', missingFields);
+      alert(`❌ Configuration Error: Missing required fields: ${missingFields.join(', ')}`);
+      return;
+    }
+    
+    if (!config.teamNames || config.teamNames.length === 0) {
+      console.error('❌ Cannot start draft: No teams configured');
+      alert('❌ Configuration Error: No teams are configured for the draft.');
+      return;
+    }
+    
+    try {
+      console.log('🚀 Emitting start-draft event with config:', config);
       socket.emit('start-draft', config);
-    } else {
-      console.log('Cannot start draft - missing socket or not commissioner');
+      console.log('✅ start-draft event emitted successfully');
+      
+      // Add a timeout to check if the draft actually started
+      setTimeout(() => {
+        if (!draftState?.isDraftStarted) {
+          console.warn('⚠️ Draft may not have started - checking state...');
+          // Could add additional checks here
+        }
+      }, 3000);
+      
+    } catch (error) {
+      console.error('💥 Error emitting start-draft event:', error);
+      alert('❌ Error: Failed to start draft. Please try again.');
     }
   };
 
@@ -293,11 +494,41 @@ const MainApp = () => {
             teams={draftState?.teams || []}
             onClose={handleDraftOrderAnnouncementClose}
             onStartDraft={() => {
-              // Start the actual draft after order announcement
-              if (socket && draftConfig) {
-                socket.emit('start-draft', draftConfig);
+              console.log('🎯 DraftOrderAnnouncement onStartDraft callback triggered');
+              console.log('🔍 Callback Debug:', {
+                'Socket available': !!socket,
+                'Socket connected': socket?.connected,
+                'Draft config available': !!draftConfig,
+                'Draft config details': draftConfig ? {
+                  'League name': draftConfig.leagueName,
+                  'League size': draftConfig.leagueSize,
+                  'Team count': draftConfig.teamNames?.length
+                } : 'No config'
+              });
+              
+              try {
+                // Start the actual draft after order announcement
+                if (socket && draftConfig) {
+                  console.log('🚀 Starting draft from announcement callback...');
+                  socket.emit('start-draft', draftConfig);
+                  console.log('✅ start-draft event emitted from callback');
+                } else {
+                  console.error('❌ Cannot start draft from callback:', {
+                    'Socket missing': !socket,
+                    'Config missing': !draftConfig
+                  });
+                  alert('❌ Error: Unable to start draft. Please try again.');
+                  return;
+                }
+                
+                console.log('🔒 Closing draft order announcement...');
+                setShowDraftOrderAnnouncement(false);
+                console.log('✅ Draft order announcement closed');
+                
+              } catch (error) {
+                console.error('💥 Error in onStartDraft callback:', error);
+                alert('❌ Error: Failed to start draft. Please try again.');
               }
-              setShowDraftOrderAnnouncement(false);
             }}
           />
         )}

@@ -312,11 +312,14 @@ const MainContent = ({ socket, draftState, activeTab, setActiveTab, fullWidth = 
               <div className="bg-gray-700 text-white text-xs font-bold p-2 rounded text-center sticky left-0 z-10">
                 Round
               </div>
-              {draftState?.teams?.map((team, index) => (
-                <div key={index} className="bg-gray-700 text-white text-xs font-bold p-2 rounded text-center">
-                  {team.name}
-                </div>
-              ))}
+              {draftState?.draftOrder?.slice(0, draftState?.teams?.length || 12).map((teamId, index) => {
+                const team = draftState.teams.find(t => t.id === teamId);
+                return (
+                  <div key={index} className="bg-gray-700 text-white text-xs font-bold p-2 rounded text-center">
+                    {team?.name || `Team ${teamId}`}
+                  </div>
+                );
+              })}
 
               {/* Draft Rows - One per round */}
               {Array.from({ length: 16 }, (_, roundIndex) => {
@@ -332,10 +335,11 @@ const MainContent = ({ socket, draftState, activeTab, setActiveTab, fullWidth = 
                     </div>
                     
                     {/* Team Picks for this Round */}
-                    {draftState?.teams?.map((team, teamIndex) => {
+                    {draftState?.draftOrder?.slice(0, draftState?.teams?.length || 12).map((teamId, teamIndex) => {
                       const pickIndex = roundStartPick + teamIndex;
                       const isCurrentPick = pickIndex === draftState.currentPick;
                       const teamPick = draftState.pickHistory?.find(p => p.pickIndex === pickIndex);
+                      const team = draftState.teams.find(t => t.id === teamId);
                       
                       return (
                         <div 

@@ -8,8 +8,8 @@ const Header = ({ socket, draftState, onReturnToDashboard, isCommissioner, user,
   const [isMuted, setIsMuted] = useState(false);
 
   const handleStartDraftClock = () => {
-    if (socket) {
-      socket.emit('start-draft-clock');
+    if (socket && draftState?.id) {
+      socket.emit('start-draft-clock', { draftId: draftState.id });
     }
   };
 

@@ -88,8 +88,11 @@ const PlayerCard = ({ player, socket, draftState }) => {
   };
 
   const handleConfirmDraft = () => {
-    if (socket) {
-      socket.emit('draft-player', { playerId: player.rank });
+    if (socket && draftState?.id) {
+      socket.emit('draft-player', { 
+        playerId: player.rank,
+        draftId: draftState.id 
+      });
     }
     setShowDraftModal(false);
     setShowExpandedModal(false);
