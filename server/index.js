@@ -452,10 +452,31 @@ function draftPlayer(draftId, playerId, isAutoPick = false) {
       return false;
     }
 
-    const playerIndex = draftState.availablePlayers.findIndex(p => p.id === playerId);
+    console.log(`🔍 Looking for player with ID: ${playerId}`);
+    console.log(`🔍 Available players count: ${draftState.availablePlayers.length}`);
+    console.log(`🔍 First few available players:`, draftState.availablePlayers.slice(0, 3).map(p => ({ id: p.id, rank: p.rank, name: p.player_name })));
+    
+    // Try to find player by ID first, then by rank
+    let playerIndex = draftState.availablePlayers.findIndex(p => p.id === playerId);
+    
     if (playerIndex === -1) {
-      console.log('⚠️ Player not found in available players:', playerId);
-      return false;
+      // Try finding by rank as fallback
+      playerIndex = draftState.availablePlayers.findIndex(p => p.rank == playerId);
+      if (playerIndex !== -1) {
+        console.log(`✅ Found player by rank instead of ID: ${playerId}`);
+        const player = draftState.availablePlayers[playerIndex];
+        console.log(`🔍 Player found by rank:`, { id: player.id, rank: player.rank, name: player.player_name });
+      } else {
+        console.log('⚠️ Player not found in available players by ID or rank:', playerId);
+        console.log('🔍 Searching for any player with matching data...');
+        const anyMatch = draftState.availablePlayers.find(p => 
+          p.id == playerId || p.rank == playerId || p.player_id == playerId
+        );
+        if (anyMatch) {
+          console.log('🔍 Found potential match:', anyMatch);
+        }
+        return false;
+      }
     }
 
     const player = draftState.availablePlayers[playerIndex];

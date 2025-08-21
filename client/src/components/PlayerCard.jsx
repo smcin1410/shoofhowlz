@@ -1,8 +1,41 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const PlayerCard = ({ player, socket, draftState }) => {
   const [showExpandedModal, setShowExpandedModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
+  const [draftError, setDraftError] = useState(null);
+
+  // Listen for draft errors and successful drafts
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleDraftError = (error) => {
+      console.error('🔴 Draft error received:', error);
+      setDraftError(error.message);
+      setTimeout(() => setDraftError(null), 5000); // Clear error after 5 seconds
+    };
+
+    const handleDraftState = (state) => {
+      // If draft state updated and we have a new pick, close the modal
+      if (state.pickHistory && state.pickHistory.length > 0) {
+        const lastPick = state.pickHistory[state.pickHistory.length - 1];
+        if (lastPick.player && lastPick.player.rank === player.rank) {
+          console.log('✅ Player successfully drafted, closing modal');
+          setShowDraftModal(false);
+          setShowExpandedModal(false);
+          setDraftError(null);
+        }
+      }
+    };
+
+    socket.on('draft-error', handleDraftError);
+    socket.on('draft-state', handleDraftState);
+
+    return () => {
+      socket.off('draft-error', handleDraftError);
+      socket.off('draft-state', handleDraftState);
+    };
+  }, [socket, player.rank]);
 
   const getPositionColor = (position) => {
     switch (position) {
@@ -88,14 +121,26 @@ const PlayerCard = ({ player, socket, draftState }) => {
   };
 
   const handleConfirmDraft = () => {
+    console.log('🎯 Draft confirmation - Player data:', player);
+    console.log('🎯 Sending draft-player with:', { 
+      playerId: player.rank,
+      draftId: draftState?.id 
+    });
+    
+    // Clear any previous errors
+    setDraftError(null);
+    
     if (socket && draftState?.id) {
       socket.emit('draft-player', { 
         playerId: player.rank,
         draftId: draftState.id 
       });
+      
+      // Don't close modal immediately - wait for success or error
+      // The modal will close when draft-state updates or show error if draft-error received
+    } else {
+      setDraftError('No connection to server or missing draft information');
     }
-    setShowDraftModal(false);
-    setShowExpandedModal(false);
   };
 
   const handleCancelDraft = () => {
@@ -119,6 +164,11 @@ const PlayerCard = ({ player, socket, draftState }) => {
             <p className="text-gray-300 mb-6">
               Are you sure you want to draft <span className="font-semibold text-white">{player.player_name}</span>?
             </p>
+            {draftError && (
+              <div className="mb-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
+                <p className="text-red-400 text-sm">{draftError}</p>
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={handleCancelDraft}
