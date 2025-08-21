@@ -141,6 +141,26 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Health check endpoint for waking up the server
+app.get('/health', (req, res) => {
+  console.log('📞 Health check request received');
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    activeDrafts: activeDrafts.size,
+    connectedClients: io.engine.clientsCount || 0
+  });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Fantasy Draft Server', 
+    status: 'running',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Function to load all player data
 function loadAllPlayers() {
   const dataDir = path.join(__dirname, 'data');

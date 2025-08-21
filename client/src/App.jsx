@@ -69,6 +69,7 @@ const MainApp = () => {
   const [participants, setParticipants] = useState([]);
   const [showRecoveryMessage, setShowRecoveryMessage] = useState(false);
   const [connectedParticipantsCount, setConnectedParticipantsCount] = useState(0);
+  const [serverStatus, setServerStatus] = useState('connecting'); // 'connecting', 'connected', 'disconnected', 'waking'
   
   // UI state
   const [appView, setAppView] = useState('dashboard'); // 'dashboard', 'lobby', 'draft'
@@ -109,21 +110,69 @@ const MainApp = () => {
   // Socket connection management
   useEffect(() => {
     if (user) {
-      // Connect to Socket.IO server when user logs in
-      console.log('🔌 Connecting to server:', SERVER_URL);
-      const newSocket = io(SERVER_URL, {
-        // Improved settings for Render free tier
-        timeout: 20000, // 20 second timeout for cold starts
-        reconnection: true,
-        reconnectionAttempts: 10,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        maxReconnectionAttempts: 10,
-        transports: ['websocket', 'polling']
-      });
-      setSocket(newSocket);
+      setServerStatus('waking');
+      
+      // Enhanced server wake-up with multiple attempts and better feedback
+      const wakeUpServer = async () => {
+        console.log('📞 Pinging server to wake up if needed:', SERVER_URL);
+        
+        try {
+          // First health check with extended timeout for cold starts
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+          
+          const response = await fetch(SERVER_URL + '/health', {
+            signal: controller.signal,
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('✅ Server is awake and responding:', data);
+            setServerStatus('connecting');
+            return true;
+          } else {
+            console.warn('⚠️ Server responded but not healthy:', response.status);
+            return false;
+          }
+        } catch (error) {
+          if (error.name === 'AbortError') {
+            console.log('⏰ Server health check timed out - server likely sleeping, giving it more time...');
+          } else {
+            console.log('⏰ Server health check failed, server is likely waking up:', error.message);
+          }
+          return false;
+        }
+      };
+      
+      // Try to wake up server before connecting Socket.IO
+      wakeUpServer().then((isAwake) => {
+        if (!isAwake) {
+          console.log('⏰ Server may be cold starting, proceeding with Socket.IO connection...');
+          setServerStatus('connecting');
+        }
+        
+        // Connect to Socket.IO server when user logs in
+        console.log('🔌 Connecting to server:', SERVER_URL);
+        const newSocket = io(SERVER_URL, {
+          // Improved settings for Render free tier cold starts
+          timeout: 30000, // 30 second timeout for cold starts
+          reconnection: true,
+          reconnectionAttempts: 15,
+          reconnectionDelay: 2000,
+          reconnectionDelayMax: 10000,
+          maxReconnectionAttempts: 15,
+          transports: ['polling', 'websocket'], // Try polling first for cold starts
+          forceNew: true // Force new connection to prevent cached issues
+        });
+        setSocket(newSocket);
 
-      // Listen for draft state updates
+        // Listen for draft state updates
       newSocket.on('draft-state', (state) => {
         console.log('📡 draft-state event received:', state);
         console.log('🔍 State Analysis:', {
@@ -231,13 +280,16 @@ const MainApp = () => {
       // Add connection status listeners
       newSocket.on('connect', () => {
         console.log('🔗 Socket connected successfully');
+        setServerStatus('connected');
       });
 
       newSocket.on('disconnect', (reason) => {
         console.log('🔌 Socket disconnected:', reason);
+        setServerStatus('disconnected');
         if (reason === 'io server disconnect') {
           // the disconnection was initiated by the server, you need to reconnect manually
           console.log('🔄 Server initiated disconnect, attempting to reconnect...');
+          setServerStatus('connecting');
           newSocket.connect();
         }
       });
@@ -254,11 +306,13 @@ const MainApp = () => {
         // Handle Render free tier cold starts - be patient with timeouts
         if (error.message?.includes('timeout')) {
           console.log('⏰ Server cold start detected - waiting for server to wake up...');
+          setServerStatus('waking');
         } else {
+          setServerStatus('disconnected');
           setTimeout(() => {
             if (!newSocket.connected) {
               console.warn('❌ Persistent connection issue - server may be down');
-              // Reduce alert frequency to avoid user annoyance
+              setServerStatus('disconnected');
             }
           }, 10000); // Increased timeout for cold starts
         }
@@ -281,24 +335,51 @@ const MainApp = () => {
         }, 3000);
       });
 
-      // Add reconnection tracking
+      // Enhanced reconnection tracking with status updates
       newSocket.on('reconnect', (attemptNumber) => {
         console.log('🔄 Successfully reconnected after', attemptNumber, 'attempts');
+        setServerStatus('connected');
+        
+        // Re-join the current draft room if we were in one
+        if (currentDraft && user) {
+          console.log('🔄 Re-joining draft room after reconnection');
+          newSocket.emit('join-lobby', {
+            username: user.username,
+            role: isCommissioner ? 'commissioner' : 'participant',
+            draftId: currentDraft.id
+          });
+        }
       });
 
       newSocket.on('reconnect_attempt', (attemptNumber) => {
-        console.log('🔄 Reconnection attempt', attemptNumber);
+        console.log('🔄 Reconnection attempt', attemptNumber, 'of 15');
+        setServerStatus('connecting');
+        
+        // Show user feedback after several attempts
+        if (attemptNumber === 5) {
+          console.log('📝 Multiple reconnection attempts - server may be experiencing cold start delays');
+        } else if (attemptNumber === 10) {
+          console.log('📝 Extended reconnection attempts - please be patient as server starts up');
+        }
       });
 
       newSocket.on('reconnect_error', (error) => {
         console.error('🔄❌ Reconnection failed:', error);
+        setServerStatus('disconnected');
       });
 
-      // Cleanup on unmount
-      return () => {
-        console.log('🧹 Cleaning up socket connection');
-        newSocket.disconnect();
-      };
+      newSocket.on('reconnect_failed', () => {
+        console.error('🔄❌ All reconnection attempts failed');
+        setServerStatus('disconnected');
+        alert('❌ Connection Lost: Unable to reconnect to server after multiple attempts. Please refresh the page.');
+      });
+
+        // Cleanup on unmount
+        return () => {
+          console.log('🧹 Cleaning up socket connection');
+          newSocket.disconnect();
+        };
+      });
     }
   }, [user]); // Removed isMuted and playPickSound to prevent infinite re-renders
 
@@ -393,6 +474,7 @@ const MainApp = () => {
     console.log('🔍 Validation Check:', {
       'Socket available': !!socket,
       'Socket connected': socket?.connected,
+      'Server status': serverStatus,
       'Is commissioner': isCommissioner,
       'Config provided': !!config,
       'Config details': config ? {
@@ -404,6 +486,25 @@ const MainApp = () => {
       } : 'No config'
     });
     
+    // Enhanced server status validation
+    if (serverStatus === 'waking') {
+      console.error('❌ Cannot start draft: Server is still waking up from cold start');
+      alert('⏰ Server Starting: The server is waking up from sleep. Please wait a moment and try again.');
+      return;
+    }
+    
+    if (serverStatus === 'connecting') {
+      console.error('❌ Cannot start draft: Still connecting to server');
+      alert('🔄 Connecting: Still establishing connection to server. Please wait a moment and try again.');
+      return;
+    }
+    
+    if (serverStatus === 'disconnected') {
+      console.error('❌ Cannot start draft: Server is disconnected');
+      alert('❌ Connection Error: Lost connection to server. Please refresh the page and try again.');
+      return;
+    }
+    
     // Validation checks
     if (!socket) {
       console.error('❌ Cannot start draft: Socket not available');
@@ -413,6 +514,12 @@ const MainApp = () => {
     
     if (!socket.connected) {
       console.error('❌ Cannot start draft: Socket not connected');
+      console.error('🎯 Socket connected:', socket.connected);
+      if (serverStatus !== 'connected') {
+        console.error('❌ Server cold start detected - waiting for server to wake up...');
+        alert('⏰ Server Cold Start: Server is starting up. Please wait 10-15 seconds and try again.');
+        return;
+      }
       alert('❌ Connection Error: Lost connection to server. Please refresh the page and try again.');
       return;
     }
