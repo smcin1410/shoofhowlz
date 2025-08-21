@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "description": "Fantasy Football Draft Application",
   "scripts": {
-    "start": "npm run start:server & npm run start:client",
+    "start": "cd server && npm start",
     "start:server": "cd server && npm start",
     "start:client": "cd client && npm run dev",
-    "dev": "npm run start",
+    "dev": "npm run start:server & npm run start:client",
     "build": "cd client && npm run build",
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install"
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "postinstall": "npm run install:all"
   },
   "keywords": [
     "fantasy",

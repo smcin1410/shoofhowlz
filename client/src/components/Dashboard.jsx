@@ -12,6 +12,8 @@ const Dashboard = ({ user, onJoinDraft, onCreateDraft, onLogout }) => {
   }, []);
 
   const handleCreateDraft = (draftConfig) => {
+    console.log('📝 Dashboard.handleCreateDraft called with:', draftConfig);
+    
     const newDraft = {
       id: Date.now().toString(),
       ...draftConfig,
@@ -22,11 +24,14 @@ const Dashboard = ({ user, onJoinDraft, onCreateDraft, onLogout }) => {
       invitedUsers: draftConfig.invitedEmails || []
     };
 
+    console.log('📝 Created newDraft object:', newDraft);
+
     const updatedDrafts = [...drafts, newDraft];
     setDrafts(updatedDrafts);
     localStorage.setItem('drafts', JSON.stringify(updatedDrafts));
     setShowCreateModal(false);
 
+    console.log('📝 Calling onCreateDraft with newDraft...');
     // Trigger the draft creation in the parent component
     onCreateDraft(newDraft);
   };

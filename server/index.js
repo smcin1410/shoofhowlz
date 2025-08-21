@@ -8,10 +8,18 @@ const { Server } = require('socket.io');
 const app = express();
 const server = createServer(app);
 const allowedOrigins = [
-  "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176"
+  "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176",
+  "https://shoofhowlz.vercel.app"
 ];
+
+// Add production client URL from environment variable
 if (process.env.CLIENT_URL) {
   allowedOrigins.push(process.env.CLIENT_URL);
+}
+
+// In production, allow Vercel preview deployments
+if (process.env.NODE_ENV === 'production') {
+  allowedOrigins.push(/https:\/\/.*\.vercel\.app$/);
 }
 
 const io = new Server(server, {
@@ -207,7 +215,7 @@ function createDraftState(draftConfig) {
     draftOrder: [],
     currentPick: 0,
     pickHistory: [],
-    defaultTimeClock: draftConfig.timeClock * 60, // Convert minutes to seconds
+    defaultTimeClock: (typeof draftConfig.timeClock === 'number' && draftConfig.timeClock > 0) ? draftConfig.timeClock * 60 : 90, // Convert minutes to seconds or default to 90
     createdBy: draftConfig.createdBy,
     createdAt: draftConfig.createdAt
   };
@@ -635,6 +643,7 @@ function startDraftTimer(draftId) {
     }
 
     let timeRemaining = draftState.defaultTimeClock || 90;
+    console.log(`🔍 TIMER DEBUG: Draft config timeClock=${draftState.timeClock}, defaultTimeClock=${draftState.defaultTimeClock}, calculated timeRemaining=${timeRemaining}`);
     console.log(`⏰ Starting ${timeRemaining}s timer for ${currentTeam.name} (Pick ${draftState.currentPick + 1})`);
     
     const timerState = { 
@@ -1051,21 +1060,31 @@ io.on('connection', (socket) => {
 
   // Start draft clock (manual start)
   socket.on('start-draft-clock', (data) => {
+    console.log(`🔍 CLOCK DEBUG: start-draft-clock received with data:`, data);
     let draftId = data?.draftId;
     if (!draftId) {
       // Find draftId from socket rooms if not provided in data
       const rooms = Array.from(socket.rooms);
+      console.log(`🔍 CLOCK DEBUG: Socket rooms:`, rooms);
       const draftRoom = rooms.find(room => room.startsWith('draft-'));
       if (draftRoom) {
         draftId = draftRoom.replace('draft-', '');
+        console.log(`🔍 CLOCK DEBUG: Found draftId from room: ${draftId}`);
       }
     }
     
     if (draftId) {
-      console.log(`Manual draft clock start requested for draft ${draftId}`);
+      console.log(`✅ Manual draft clock start requested for draft ${draftId}`);
+      const draftExists = activeDrafts.has(draftId);
+      console.log(`🔍 CLOCK DEBUG: Draft exists in activeDrafts: ${draftExists}`);
+      if (draftExists) {
+        const draftState = activeDrafts.get(draftId);
+        console.log(`🔍 CLOCK DEBUG: Draft started: ${draftState.isDraftStarted}, Complete: ${draftState.isComplete}`);
+      }
       startDraftTimer(draftId);
     } else {
-      console.log('No draftId found for start-draft-clock request');
+      console.log('❌ No draftId found for start-draft-clock request');
+      console.log('🔍 CLOCK DEBUG: Available socket rooms:', Array.from(socket.rooms));
     }
   });
 

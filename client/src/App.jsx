@@ -110,7 +110,17 @@ const MainApp = () => {
   useEffect(() => {
     if (user) {
       // Connect to Socket.IO server when user logs in
-      const newSocket = io(SERVER_URL);
+      console.log('🔌 Connecting to server:', SERVER_URL);
+      const newSocket = io(SERVER_URL, {
+        // Improved settings for Render free tier
+        timeout: 20000, // 20 second timeout for cold starts
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        maxReconnectionAttempts: 10,
+        transports: ['websocket', 'polling']
+      });
       setSocket(newSocket);
 
       // Listen for draft state updates
@@ -241,12 +251,17 @@ const MainApp = () => {
           transport: error.transport
         });
         
-        // Only show alert for persistent connection errors
-        setTimeout(() => {
-          if (!newSocket.connected) {
-            alert('❌ Connection Error: Unable to connect to server. Please check your internet connection and refresh the page.');
-          }
-        }, 5000);
+        // Handle Render free tier cold starts - be patient with timeouts
+        if (error.message?.includes('timeout')) {
+          console.log('⏰ Server cold start detected - waiting for server to wake up...');
+        } else {
+          setTimeout(() => {
+            if (!newSocket.connected) {
+              console.warn('❌ Persistent connection issue - server may be down');
+              // Reduce alert frequency to avoid user annoyance
+            }
+          }, 10000); // Increased timeout for cold starts
+        }
       });
 
       // Enhanced error event listener with retry logic
@@ -313,22 +328,29 @@ const MainApp = () => {
 
   // Draft management handlers
   const handleCreateDraft = (draftConfig) => {
-    console.log('Creating draft:', draftConfig);
+    console.log('🎯 Creating draft:', draftConfig);
+    console.log('🎯 Current user:', user);
+    console.log('🎯 Socket available:', !!socket);
+    console.log('🎯 Socket connected:', socket?.connected);
+    
     setCurrentDraft(draftConfig);
     setDraftConfig(draftConfig);
     setIsCommissioner(true);
+    
+    console.log('🎯 Changing appView to lobby...');
     setAppView('lobby');
     
     // Join the draft room when creating
     if (socket) {
-      console.log('Emitting join-lobby for new draft');
+      console.log('🎯 Emitting join-lobby for new draft');
       socket.emit('join-lobby', {
         username: user.username,
         role: 'commissioner',
         draftId: draftConfig.id
       });
     } else {
-      console.log('No socket available when creating draft');
+      console.log('❌ No socket available when creating draft');
+      console.log('❌ This might be the problem - socket connection issue');
     }
   };
 

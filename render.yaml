@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: shoof-howlz-backend
+    env: node
+    buildCommand: npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_URL
+        value: https://shoofhowlz.vercel.app
