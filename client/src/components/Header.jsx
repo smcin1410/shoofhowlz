@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useSound } from '../hooks/useSound';
+import { createBeepSound } from '../utils/audioUtils';
 
 const Header = ({ socket, draftState, onReturnToDashboard, isCommissioner, user, onAdminAutoDraft }) => {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [canExtend, setCanExtend] = useState(false);
-  const [playTimerAlert] = useSound('/timer-alert.mp3');
+  const [playTimerAlert] = useState(() => createBeepSound(800, 0.5));
   const [isMuted, setIsMuted] = useState(false);
 
   const handleStartDraftClock = () => {
@@ -20,7 +20,11 @@ const Header = ({ socket, draftState, onReturnToDashboard, isCommissioner, user,
       setTimeRemaining(data.timeRemaining);
       setCanExtend(data.canExtend);
       if (data.timeRemaining === 10 && !isMuted) {
-        playTimerAlert();
+        try {
+          playTimerAlert();
+        } catch (error) {
+          console.warn('🔇 Timer alert sound not available:', error.message);
+        }
       }
     };
 
