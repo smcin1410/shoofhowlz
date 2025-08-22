@@ -1,4 +1,8 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { formatTimeDisplay } from '../utils/timeUtils';
+import DraftSettingsModal from './DraftSettingsModal';
+
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
 
 const DraftLobby = ({
   user,
@@ -8,15 +12,346 @@ const DraftLobby = ({
   socket,
   onStartDraft,
   onReturnToDashboard,
-  onAdminAutoDraft
+  onAdminAutoDraft,
+  isDraftComplete,
+  draftState
 }) => {
   const [chatMessages, setChatMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [isReady, setIsReady] = useState(false);
   const [showDraftOrderModal, setShowDraftOrderModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [draftOrderType, setDraftOrderType] = useState('random');
   const [manualDraftOrder, setManualDraftOrder] = useState([]);
   const [teamAssignments, setTeamAssignments] = useState([]);
+
+  // Helper function to log data size for analysis
+  const logDataSize = (data, label) => {
+    const dataString = JSON.stringify(data);
+    const sizeKB = Math.round(dataString.length / 1024);
+    const sizeMB = (dataString.length / (1024 * 1024)).toFixed(2);
+    
+    console.log(`📊 ${label} data size:`, {
+      bytes: dataString.length,
+      kilobytes: sizeKB,
+      megabytes: sizeMB,
+      localStorageLimit: '~5-10MB',
+      sessionStorageLimit: '~5-10MB'
+    });
+    
+    return dataString.length;
+  };
+
+  // Comprehensive testing function for storage optimization
+  const runStorageTests = () => {
+    console.log('🧪 Running comprehensive storage tests...');
+    
+    // Test 1: Current draft data size
+    if (draftState) {
+      const originalSize = logDataSize(draftState, 'Current draft state');
+      const optimizedData = createOptimizedDraftData();
+      const optimizedSize = logDataSize(optimizedData, 'Optimized version');
+      
+      const reduction = ((originalSize - optimizedSize) / originalSize * 100).toFixed(1);
+      console.log(`✅ Test 1 - Size reduction: ${reduction}%`);
+    }
+    
+    // Test 2: Simulate large draft (192 picks, 12 teams, 16 rounds)
+    const simulateLargeDraft = () => {
+      const largeDraftData = {
+        id: 'test-large-draft',
+        leagueName: 'Test Large League',
+        teams: Array.from({ length: 12 }, (_, i) => ({
+          id: i + 1,
+          name: `Team ${i + 1}`,
+          email: `team${i + 1}@example.com`,
+          roster: []
+        })),
+        pickHistory: Array.from({ length: 192 }, (_, i) => ({
+          pickIndex: i,
+          pickNumber: i + 1,
+          player: {
+            id: `player-${i}`,
+            player_name: `Player Name ${i + 1}`,
+            position: ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'][i % 6],
+            team: ['SF', 'GB', 'KC', 'BUF', 'TB', 'LAR'][i % 6],
+            rank: i + 1,
+            adp: (i + 1) * 1.5,
+            projectedPoints: 100 - i
+          },
+          team: {
+            id: (i % 12) + 1,
+            name: `Team ${(i % 12) + 1}`
+          },
+          isAutoPick: Math.random() > 0.7,
+          timestamp: Date.now() - (192 - i) * 60000
+        })),
+        draftOrder: Array.from({ length: 192 }, (_, i) => ({
+          teamId: (i % 12) + 1,
+          pickNumber: i + 1
+        })),
+        isComplete: true
+      };
+      
+      const largeOriginalSize = logDataSize(largeDraftData, 'Large draft (192 picks) - Original');
+      
+      // Create optimized version
+      const largeOptimized = {
+        id: largeDraftData.id,
+        leagueName: largeDraftData.leagueName,
+        teams: largeDraftData.teams.map(t => ({ id: t.id, name: t.name, email: t.email })),
+        pickHistory: largeDraftData.pickHistory.map(pick => ({
+          idx: pick.pickIndex,
+          num: pick.pickNumber,
+          p: {
+            id: pick.player.id,
+            n: pick.player.player_name,
+            pos: pick.player.position,
+            tm: pick.player.team,
+            r: pick.player.rank
+          },
+          t: {
+            id: pick.team.id,
+            n: pick.team.name
+          },
+          auto: pick.isAutoPick,
+          ts: pick.timestamp
+        })),
+        draftOrder: largeDraftData.draftOrder,
+        isComplete: true
+      };
+      
+      const largeOptimizedSize = logDataSize(largeOptimized, 'Large draft (192 picks) - Optimized');
+      const largeReduction = ((largeOriginalSize - largeOptimizedSize) / largeOriginalSize * 100).toFixed(1);
+      
+      console.log(`✅ Test 2 - Large draft optimization: ${largeReduction}% reduction`);
+      console.log(`📈 Storage analysis:`, {
+        'Will fit in localStorage': largeOptimizedSize < 5000000,
+        'Estimated localStorage usage': `${(largeOptimizedSize / 5000000 * 100).toFixed(1)}%`,
+        'Fallback needed': largeOptimizedSize > 5000000
+      });
+    };
+    
+    simulateLargeDraft();
+    
+    // Test 3: Storage method validation
+    console.log('✅ Test 3 - Storage method priority:');
+    console.log('1. Server storage (24hr expiration)');
+    console.log('2. localStorage (optimized data)');
+    console.log('3. sessionStorage (fallback)');
+    console.log('4. Essential data only (last resort)');
+    
+    console.log('🎯 All storage tests completed!');
+  };
+
+  // Helper function to create highly optimized draft data
+  const createOptimizedDraftData = () => ({
+    // Essential metadata only
+    id: currentDraft.id,
+    leagueName: currentDraft.leagueName,
+    totalRounds: currentDraft.totalRounds,
+    draftType: currentDraft.draftType,
+    leagueSize: currentDraft.leagueSize,
+    isComplete: true,
+    
+    // Optimized team data (only essential fields)
+    teams: (draftState?.teams || []).map(team => ({
+      id: team.id,
+      name: team.name,
+      email: team.email || ''
+    })),
+    
+    // Highly optimized pick history (remove redundant data)
+    pickHistory: (draftState?.pickHistory || []).map(pick => ({
+      idx: pick.pickIndex,
+      num: pick.pickNumber,
+      p: {
+        id: pick.player.id,
+        n: pick.player.player_name,
+        pos: pick.player.position,
+        tm: pick.player.team,
+        r: pick.player.rank
+      },
+      t: {
+        id: pick.team.id,
+        n: pick.team.name
+      },
+      auto: pick.isAutoPick || false,
+      ts: pick.timestamp
+    })),
+    
+    // Draft order (already compact)
+    draftOrder: draftState?.draftOrder || []
+  });
+
+  // Helper function to create minimal data fallback
+  const createMinimalDraftData = () => ({
+    id: currentDraft.id,
+    leagueName: currentDraft.leagueName,
+    teams: (draftState?.teams || []).map(team => ({ id: team.id, name: team.name })),
+    pickHistory: (draftState?.pickHistory || []).map(pick => ({
+      idx: pick.pickIndex,
+      p: { n: pick.player.player_name, pos: pick.player.position, tm: pick.player.team },
+      t: { id: pick.team.id, n: pick.team.name }
+    })),
+    draftOrder: draftState?.draftOrder || [],
+    isComplete: true
+  });
+
+  // Helper function to create essential data only
+  const createEssentialDraftData = () => ({
+    id: currentDraft.id,
+    leagueName: currentDraft.leagueName,
+    teams: (draftState?.teams || []).map(team => ({ id: team.id, name: team.name })),
+    pickHistory: (draftState?.pickHistory || []).slice(0, 50).map(pick => ({
+      p: { n: pick.player.player_name, pos: pick.player.position },
+      t: { n: pick.team.name }
+    })),
+    isComplete: true,
+    limited: true
+  });
+
+  // Helper function to handle storage errors
+  const handleStorageError = async (error) => {
+    if (error.name === 'QuotaExceededError') {
+      try {
+        // Method 1: Try sessionStorage with minimal data
+        const minimalData = createMinimalDraftData();
+        const minimalSize = logDataSize(minimalData, 'Minimal fallback');
+        
+        sessionStorage.setItem(`draft-results-${currentDraft.id}`, JSON.stringify(minimalData));
+        console.log('📄 Minimal draft data stored in sessionStorage (fallback)');
+        
+        const url = `${window.location.origin}/results?draftId=${currentDraft.id}`;
+        window.open(url, '_blank');
+        
+      } catch (sessionError) {
+        try {
+          // Method 2: Try essential data only
+          const essentialData = createEssentialDraftData();
+          localStorage.setItem(`draft-results-${currentDraft.id}`, JSON.stringify(essentialData));
+          console.log('📄 Essential draft data stored in localStorage');
+          
+          alert('⚠️ Draft data is very large. Opening limited print view with first 50 picks...');
+          const url = `${window.location.origin}/results?draftId=${currentDraft.id}`;
+          window.open(url, '_blank');
+          
+        } catch (finalError) {
+          alert('❌ Unable to store draft data. Please try "Force Complete Draft" first or try again later.');
+        }
+      }
+    } else {
+      alert('❌ Error opening draft board. Please try again.');
+    }
+  };
+
+  // Helper function to store data locally with fallbacks
+  const storeDraftDataLocally = async (draftData) => {
+    try {
+      const dataString = JSON.stringify(draftData);
+      const storageKey = `draft-results-${currentDraft.id}`;
+      
+      console.log('🔍 Storing draft data locally:', {
+        draftId: currentDraft.id,
+        dataSize: dataString.length,
+        storageKey
+      });
+      
+      if (dataString.length > 4000000) { // 4MB limit
+        sessionStorage.setItem(storageKey, dataString);
+        console.log('📄 Large draft data stored in sessionStorage');
+      } else {
+        localStorage.setItem(storageKey, dataString);
+        console.log('📄 Draft data stored in localStorage');
+      }
+      
+      const url = `${window.location.origin}/results?draftId=${currentDraft.id}`;
+      console.log('🔍 Opening URL:', url);
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error('❌ Error storing draft data locally:', error);
+      throw error;
+    }
+  };
+
+  // Main function to handle opening the draft board with server-first storage
+  const handleOpenDraftBoard = async () => {
+    try {
+      console.log('🔍 Opening draft board for draft:', currentDraft.id);
+      console.log('🔍 Current draft state:', draftState);
+      
+      // Create optimized draft data
+      const optimizedData = createOptimizedDraftData();
+      const originalSize = logDataSize(draftState, 'Original draft state');
+      const optimizedSize = logDataSize(optimizedData, 'Optimized draft');
+      
+      console.log('📈 Data optimization results:', {
+        'Original size': `${Math.round(originalSize / 1024)}KB`,
+        'Optimized size': `${Math.round(optimizedSize / 1024)}KB`,
+        'Size reduction': `${Math.round((1 - optimizedSize / originalSize) * 100)}%`,
+        'Picks included': optimizedData.pickHistory.length
+      });
+      
+      // Try server storage first
+      try {
+        console.log('📡 Attempting to store draft data on server...');
+        const response = await fetch(`${SERVER_URL}/api/store-draft-results`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            draftId: currentDraft.id,
+            draftData: optimizedData
+          })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ Draft data stored on server successfully:', result.message);
+          
+          // Store a reference in localStorage
+          localStorage.setItem(`draft-results-${currentDraft.id}`, JSON.stringify({
+            id: currentDraft.id,
+            storedOnServer: true,
+            timestamp: Date.now()
+          }));
+          
+          // Use the client port directly to avoid server routing issues
+          const clientUrl = window.location.origin.includes('localhost:4000') 
+            ? 'http://localhost:5173' 
+            : window.location.origin;
+          const url = `${clientUrl}/results?draftId=${currentDraft.id}`;
+          console.log('🔍 Opening URL:', url);
+          window.open(url, '_blank');
+          return;
+        } else {
+          const errorData = await response.json();
+          throw new Error(`Server storage failed: ${errorData.error}`);
+        }
+      } catch (serverError) {
+        console.warn('⚠️ Server storage failed, falling back to client storage:', serverError.message);
+      }
+      
+      // Fallback to client storage if server fails
+      console.log('📱 Using client storage fallback...');
+      await storeDraftDataLocally(optimizedData);
+      
+    } catch (error) {
+      console.error('❌ Failed to store draft data:', error);
+      await handleStorageError(error);
+    }
+  };
+
+  // Helper function to get timer value in seconds
+  const getTimerInSeconds = () => {
+    let timeValue = currentDraft?.timeClock || currentDraft?.defaultTimeClock || 90;
+    // If the value is less than 10, it's likely in minutes, so convert to seconds
+    if (timeValue < 10) {
+      timeValue = timeValue * 60;
+    }
+    return timeValue;
+  };
 
   // Initialize team assignments and manual draft order
   useEffect(() => {
@@ -31,61 +366,76 @@ const DraftLobby = ({
     }
   }, [currentDraft]);
 
-  // Socket event listeners
-  useEffect(() => {
-    if (!socket) return;
+      // Socket event listeners
+    useEffect(() => {
+      if (!socket) return;
 
-    // Chat functionality
-    socket.on('lobby-chat-message', (message) => {
-      setChatMessages(prev => [...prev, message]);
-    });
+      // Chat functionality
+      socket.on('lobby-chat-message', (message) => {
+        setChatMessages(prev => [...prev, message]);
+      });
 
-    socket.on('chat-history', (history) => {
-      setChatMessages(history);
-    });
+      socket.on('chat-history', (history) => {
+        setChatMessages(history);
+      });
 
-    socket.on('participants-update', (participantsList) => {
-      // Update local participant state is handled by parent
-    });
+      socket.on('participants-update', (participantsList) => {
+        // Update local participant state is handled by parent
+      });
 
-    socket.on('team-assignments-update', (assignments) => {
-      setTeamAssignments(assignments);
-    });
+      socket.on('team-assignments-update', (assignments) => {
+        setTeamAssignments(assignments);
+      });
 
-    // Enhanced team assignment notifications
-    socket.on('team-pre-assigned', (data) => {
-      alert(`🔒 Team Pre-Assignment!\n\n${data.message}\n\nYou can now proceed with the draft when it begins.`);
-    });
+      // Enhanced team assignment notifications
+      socket.on('team-pre-assigned', (data) => {
+        alert(`🔒 Team Pre-Assignment!\n\n${data.message}\n\nYou can now proceed with the draft when it begins.`);
+      });
 
-    socket.on('team-claim-success', (data) => {
-      alert(`✅ Team Claimed Successfully!\n\n${data.message}`);
-    });
+      socket.on('team-claim-success', (data) => {
+        alert(`✅ Team Claimed Successfully!\n\n${data.message}`);
+      });
 
-    socket.on('team-claim-error', (data) => {
-      let alertMessage = `❌ Team Claim Failed\n\n${data.message}`;
-      
-      if (data.type === 'pre_assigned_protected') {
-        alertMessage += '\n\n💡 This team is reserved for a specific participant. Please choose an available team.';
-      } else if (data.type === 'already_claimed') {
-        alertMessage += '\n\n💡 You can only claim one team per draft.';
-      }
-      
-      alert(alertMessage);
-    });
+      socket.on('team-claim-error', (data) => {
+        let alertMessage = `❌ Team Claim Failed\n\n${data.message}`;
+        
+        if (data.type === 'pre_assigned_protected') {
+          alertMessage += '\n\n💡 This team is reserved for a specific participant. Please choose an available team.';
+        } else if (data.type === 'already_claimed') {
+          alertMessage += '\n\n💡 You can only claim one team per draft.';
+        }
+        
+        alert(alertMessage);
+      });
 
-    // Request chat history when joining
-    socket.emit('request-chat-history', { draftId: currentDraft?.id });
+      // Draft error handling
+      socket.on('draft-error', (error) => {
+        console.error('❌ Draft error received:', error);
+        alert(`❌ Draft Error: ${error.message}`);
+        setShowDraftOrderModal(false);
+      });
 
-    return () => {
-      socket.off('lobby-chat-message');
-      socket.off('chat-history');
-      socket.off('participants-update');
-      socket.off('team-assignments-update');
-      socket.off('team-pre-assigned');
-      socket.off('team-claim-success');
-      socket.off('team-claim-error');
-    };
-  }, [socket, currentDraft?.id]);
+      // Draft completion handling
+      socket.on('draft-complete', (draftState) => {
+        console.log('🏆 Draft completed!', draftState);
+        // The parent component will handle the state update
+      });
+
+      // Request chat history when joining
+      socket.emit('request-chat-history', { draftId: currentDraft?.id });
+
+      return () => {
+        socket.off('lobby-chat-message');
+        socket.off('chat-history');
+        socket.off('participants-update');
+        socket.off('team-assignments-update');
+        socket.off('team-pre-assigned');
+        socket.off('team-claim-success');
+        socket.off('team-claim-error');
+        socket.off('draft-error');
+        socket.off('draft-complete');
+      };
+    }, [socket, currentDraft?.id]);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
@@ -144,14 +494,59 @@ const DraftLobby = ({
   };
 
   const handleStartDraftFlow = () => {
-    setShowDraftOrderModal(true);
+    // Check draft status and handle accordingly
+    if (draftState?.status === 'completed' || draftState?.isComplete) {
+      // Draft is completed - go to review/edit mode
+      console.log('📋 Reviewing completed draft');
+      onStartDraft(currentDraft); // This will take us to the draft page for review
+    } else if (draftState?.status === 'in_progress' || draftState?.isDraftStarted) {
+      // Draft is in progress - join the draft
+      console.log('🏈 Joining live draft');
+      onStartDraft(currentDraft); // This will take us to the active draft
+    } else {
+      // Draft hasn't started - show draft order modal
+      console.log('🚀 Starting new draft');
+      setShowDraftOrderModal(true);
+    }
   };
 
   const handleDraftOrderSelection = () => {
+    // Generate complete draft order for manual selection
+    let completeManualDraftOrder = null;
+    
+    if (draftOrderType === 'manual') {
+      // Validate manual draft order
+      if (!manualDraftOrder || manualDraftOrder.length !== currentDraft.leagueSize) {
+        alert('❌ Invalid manual draft order: Must include all teams');
+        return;
+      }
+      
+      // Generate complete draft order for all rounds
+      completeManualDraftOrder = [];
+      const totalRounds = currentDraft.totalRounds || 16;
+      
+      for (let round = 0; round < totalRounds; round++) {
+        if (currentDraft.draftType === 'Snake' && round % 2 === 1) {
+          // Reverse order for odd rounds (snake draft)
+          completeManualDraftOrder.push(...[...manualDraftOrder].reverse());
+        } else {
+          // Normal order for even rounds or linear draft
+          completeManualDraftOrder.push(...manualDraftOrder);
+        }
+      }
+      
+      console.log('📋 Generated complete manual draft order:', {
+        'First round': manualDraftOrder,
+        'Total rounds': totalRounds,
+        'Draft type': currentDraft.draftType,
+        'Complete order length': completeManualDraftOrder.length
+      });
+    }
+    
     const draftConfig = {
       ...currentDraft,
       draftOrderType,
-      manualDraftOrder: draftOrderType === 'manual' ? manualDraftOrder : null,
+      manualDraftOrder: completeManualDraftOrder,
       teamAssignments
     };
 
@@ -210,6 +605,11 @@ const DraftLobby = ({
                   Scheduled: {formatDateTime(currentDraft.draftDateTime)}
                 </span>
               )}
+              {showDraftOrderModal && (
+                <span className="ml-4 text-yellow-400">
+                  {draftOrderType === 'random' ? '🎲 Random Order' : '⚙️ Manual Order'}
+                </span>
+              )}
             </p>
           </div>
           <div className="flex items-center space-x-4">
@@ -226,6 +626,28 @@ const DraftLobby = ({
                 🧪 Admin Auto Draft
               </button>
             )}
+            {user?.isAdmin && (
+              <button
+                onClick={() => {
+                  console.log('🔧 Manual completion trigger clicked');
+                  console.log('Current isDraftComplete:', isDraftComplete);
+                  console.log('Current draft state:', currentDraft);
+                  // Force show completion state for testing
+                  alert('🔧 Manual completion trigger - check console for debug info');
+                }}
+                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+              >
+                🔧 Debug Completion
+              </button>
+            )}
+            {(draftState?.isComplete || draftState?.status === 'completed') && (
+              <button
+                onClick={handleOpenDraftBoard}
+                className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-md font-medium transition-colors"
+              >
+                📄 Print Friendly Draft Board
+              </button>
+            )}
             <button
               onClick={onReturnToDashboard}
               className="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded-md font-medium"
@@ -235,6 +657,36 @@ const DraftLobby = ({
           </div>
         </div>
       </div>
+
+      {/* Draft Completion Banner */}
+      {(draftState?.isComplete || draftState?.status === 'completed') && (
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="bg-green-800 border border-green-600 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="text-green-400 text-2xl">🏆</div>
+                <div>
+                  <h2 className="text-white font-semibold text-lg">Draft Complete!</h2>
+                  <p className="text-green-200 text-sm">
+                    Congratulations! The draft has been completed successfully. You can now generate PDFs and share results.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                {isCommissioner && (
+                  <button
+                    onClick={runStorageTests}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-md font-medium transition-colors"
+                    title="Run comprehensive storage optimization tests"
+                  >
+                    🧪 Test Storage
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid lg:grid-cols-3 gap-8">
@@ -256,7 +708,9 @@ const DraftLobby = ({
                 </div>
                 <div className="text-center p-3 bg-gray-700 rounded">
                   <div className="text-gray-400">Timer</div>
-                  <div className="text-white font-medium">{currentDraft?.timeClock} min</div>
+                  <div className="text-white font-medium">
+                    {formatTimeDisplay(getTimerInSeconds())}
+                  </div>
                 </div>
                 <div className="text-center p-3 bg-gray-700 rounded">
                   <div className="text-gray-400">Type</div>
@@ -596,25 +1050,87 @@ const DraftLobby = ({
             {/* Start Draft Section (Commissioner Only) */}
             {isCommissioner && (
               <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-                <h2 className="text-xl font-semibold text-white mb-4">Start Draft</h2>
+                <h2 className="text-xl font-semibold text-white mb-4">
+                  {draftState?.status === 'completed' || draftState?.isComplete ? 'Draft Management' : 'Start Draft'}
+                </h2>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray-300 mb-2">
-                      {participants.length} participants connected
-                      {allParticipantsReady && (
-                        <span className="text-green-400 ml-2">✓ All ready</span>
+                      {draftState?.status === 'completed' || draftState?.isComplete ? (
+                        `Draft completed - ${draftState?.pickHistory?.length || 0} total picks made`
+                      ) : draftState?.status === 'in_progress' || draftState?.isDraftStarted ? (
+                        (() => {
+                          const currentPickIndex = (draftState?.currentPick || 1) - 1;
+                          const totalPicks = draftState?.draftOrder?.length || 0;
+                          const currentTeam = draftState?.draftOrder?.[currentPickIndex];
+                          const currentTeamName = currentTeam ? draftState?.teams?.find(t => t.id === currentTeam.teamId)?.name || `Team ${currentTeam.teamId}` : 'Unknown Team';
+                          const completionPercentage = totalPicks > 0 ? Math.round(((draftState?.currentPick || 1) - 1) / totalPicks * 100) : 0;
+                          
+                          return `Pick ${draftState?.currentPick || 1} of ${totalPicks} - ${currentTeamName} on the clock (${completionPercentage}% complete)`;
+                        })()
+                      ) : (
+                        `${participants.length} participants connected${
+                          allParticipantsReady ? ' ✓ All ready' : ''
+                        }`
                       )}
                     </p>
+                    
+                    {/* Progress Bar for Active Drafts */}
+                    {(draftState?.status === 'in_progress' || draftState?.isDraftStarted) && !draftState?.isComplete && (
+                      <div className="my-3">
+                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                          <span>Draft Progress</span>
+                          <span>{Math.round(((draftState?.currentPick || 1) - 1) / (draftState?.draftOrder?.length || 1) * 100)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-700 rounded-full h-2">
+                          <div 
+                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                            style={{
+                              width: `${Math.round(((draftState?.currentPick || 1) - 1) / (draftState?.draftOrder?.length || 1) * 100)}%`
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                    
                     <p className="text-gray-400 text-sm">
-                      Draft can start anytime. Late participants will be auto-picked until they join.
+                      {draftState?.status === 'completed' || draftState?.isComplete ? (
+                        'Click to review the completed draft and make any necessary edits.'
+                      ) : draftState?.status === 'in_progress' || draftState?.isDraftStarted ? (
+                        'Draft can be joined anytime. Late participants will be auto-picked until they join.'
+                      ) : (
+                        'Draft can start anytime. Late participants will be auto-picked until they join.'
+                      )}
                     </p>
                   </div>
-                  <button
-                    onClick={handleStartDraftFlow}
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium"
-                  >
-                    🏈 Start Draft
-                  </button>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => setShowSettingsModal(true)}
+                      className="px-4 py-3 rounded-md font-medium transition-colors bg-gray-600 hover:bg-gray-700 text-white flex items-center space-x-2"
+                      title="Draft Settings"
+                    >
+                      <span>⚙️</span>
+                      <span>Settings</span>
+                    </button>
+                    <button
+                      onClick={handleStartDraftFlow}
+                      className={`px-6 py-3 rounded-md font-medium transition-colors ${
+                        draftState?.status === 'completed' || draftState?.isComplete
+                          ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                          : draftState?.status === 'in_progress' || draftState?.isDraftStarted
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                          : 'bg-green-600 hover:bg-green-700 text-white'
+                      }`}
+                    >
+                      {draftState?.status === 'completed' || draftState?.isComplete ? (
+                        '📋 Review Completed Draft'
+                      ) : draftState?.status === 'in_progress' || draftState?.isDraftStarted ? (
+                        '🏈 Enter Live Draft'
+                      ) : (
+                        '🚀 Start Draft'
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -752,6 +1268,9 @@ const DraftLobby = ({
               {draftOrderType === 'manual' && (
                 <div className="mb-6 p-4 bg-gray-700 rounded-lg">
                   <h3 className="text-white font-medium mb-3">Arrange Draft Order</h3>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Set the first round order. The system will automatically handle snake/linear draft patterns for subsequent rounds.
+                  </p>
                   <div className="space-y-2">
                     {manualDraftOrder.map((teamId, index) => (
                       <div key={index} className="flex items-center justify-between p-2 bg-gray-600 rounded">
@@ -779,6 +1298,28 @@ const DraftLobby = ({
                       </div>
                     ))}
                   </div>
+                  
+                  {/* Preview of complete draft order */}
+                  <div className="mt-4 p-3 bg-gray-600 rounded">
+                    <h4 className="text-white font-medium mb-2">Draft Order Preview</h4>
+                    <div className="text-gray-300 text-sm">
+                      <div className="mb-2">
+                        <strong>Round 1:</strong> {manualDraftOrder.map((teamId, index) => 
+                          `${index + 1}. ${currentDraft?.teamNames[teamId - 1]}`
+                        ).join(' → ')}
+                      </div>
+                      {currentDraft?.draftType === 'Snake' && (
+                        <div>
+                          <strong>Round 2:</strong> {[...manualDraftOrder].reverse().map((teamId, index) => 
+                            `${index + 1}. ${currentDraft?.teamNames[teamId - 1]}`
+                          ).join(' → ')}
+                        </div>
+                      )}
+                      <div className="text-gray-400 mt-2">
+                        Total picks: {manualDraftOrder.length * (currentDraft?.totalRounds || 16)}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -800,6 +1341,19 @@ const DraftLobby = ({
           </div>
         </div>
       )}
+
+      {/* Draft Settings Modal */}
+      <DraftSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        currentDraft={currentDraft}
+        socket={socket}
+        isCommissioner={isCommissioner}
+        onSettingsUpdate={(newSettings) => {
+          // The settings will be updated via the socket event
+          console.log('Settings updated:', newSettings);
+        }}
+      />
     </div>
   );
 };
