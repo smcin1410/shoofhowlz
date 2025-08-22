@@ -2172,7 +2172,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Admin undo last pick
+  // Admin undo last pick - Enhanced with comprehensive validation and error handling
   socket.on('admin-undo-last-pick', () => {
     try {
       // Find the draft this admin is connected to
@@ -2194,16 +2194,62 @@ io.on('connection', (socket) => {
         return;
       }
 
+      // Check undo cooldown (prevent spam)
+      const now = Date.now();
+      if (draftState.lastUndoTime && (now - draftState.lastUndoTime) < 2000) { // 2 second cooldown
+        console.log('⚠️ Undo cooldown active');
+        socket.emit('draft-error', { message: 'Please wait 2 seconds between undo operations' });
+        return;
+      }
+
+      // Check for too many consecutive undos (prevent abuse)
+      if (draftState.undoHistory && draftState.undoHistory.length >= 5) {
+        const recentUndos = draftState.undoHistory.filter(undo => (now - undo.timestamp) < 60000); // Last minute
+        if (recentUndos.length >= 5) {
+          console.log('⚠️ Too many undos in short time period');
+          socket.emit('draft-error', { message: 'Too many undo operations. Please wait before trying again.' });
+          return;
+        }
+      }
+
+      // Validate draft state
+      if (!draftState.isDraftStarted) {
+        console.log('⚠️ Cannot undo pick: Draft not started');
+        socket.emit('draft-error', { message: 'Draft must be started to undo picks' });
+        return;
+      }
+
+      if (draftState.isComplete) {
+        console.log('⚠️ Cannot undo pick: Draft is complete');
+        socket.emit('draft-error', { message: 'Cannot undo picks in a completed draft' });
+        return;
+      }
+
       if (draftState.pickHistory.length === 0) {
         console.log('⚠️ No picks to undo');
         socket.emit('draft-error', { message: 'No picks to undo' });
         return;
       }
 
+      // Validate current pick state
+      if (draftState.currentPick <= 0) {
+        console.log('⚠️ Cannot undo: Already at first pick');
+        socket.emit('draft-error', { message: 'Cannot undo beyond the first pick' });
+        return;
+      }
+
       // Get the last pick
       const lastPick = draftState.pickHistory.pop();
+      if (!lastPick || !lastPick.player || !lastPick.team) {
+        console.log('⚠️ Invalid pick data in history');
+        socket.emit('draft-error', { message: 'Invalid pick data' });
+        return;
+      }
+
       const player = lastPick.player;
       const team = lastPick.team;
+
+      console.log(`🔄 Undoing pick: ${team.name} - ${player.player_name} (${player.position})`);
 
       // Return player to available pool - insert at correct rank position
       const insertIndex = draftState.availablePlayers.findIndex(p => p.rank > player.rank);
@@ -2215,28 +2261,71 @@ io.on('connection', (socket) => {
         draftState.availablePlayers.splice(insertIndex, 0, player);
       }
       
-      // Ensure proper sorting by rank
-      draftState.availablePlayers.sort((a, b) => a.rank - b.rank);
+      // Ensure proper sorting by rank with secondary sort by name for equal ranks
+      draftState.availablePlayers.sort((a, b) => {
+        if (a.rank !== b.rank) {
+          return a.rank - b.rank;
+        }
+        // Secondary sort by name if ranks are equal
+        return a.player_name.localeCompare(b.player_name);
+      });
       
+      // Remove from drafted players
       draftState.draftedPlayers = draftState.draftedPlayers.filter(p => p.rank !== player.rank);
 
       // Remove from team roster
       const teamIndex = draftState.teams.findIndex(t => t.id === team.id);
       if (teamIndex !== -1) {
         draftState.teams[teamIndex].roster = draftState.teams[teamIndex].roster.filter(p => p.rank !== player.rank);
+      } else {
+        console.log('⚠️ Team not found for roster update:', team.id);
       }
 
       // Move back to previous pick
       draftState.currentPick--;
 
-      console.log(`✅ Undid pick: ${team.name} - ${player.player_name} (${player.position})`);
+      // Reset timer if it's running (give the team time to make their pick again)
+      if (draftState.timeRemaining > 0) {
+        draftState.timeRemaining = draftState.timeClock * 60; // Reset to full time
+        console.log(`⏰ Reset timer to ${draftState.timeClock} minutes for team ${team.name}`);
+      }
+
+      // Track undo operation
+      draftState.lastUndoTime = Date.now();
+      
+      // Initialize undo history if not exists
+      if (!draftState.undoHistory) {
+        draftState.undoHistory = [];
+      }
+      
+      // Add to undo history (keep last 10 undos)
+      draftState.undoHistory.push({
+        timestamp: Date.now(),
+        player: player.player_name,
+        position: player.position,
+        team: team.name,
+        pickNumber: draftState.currentPick + 1
+      });
+      
+      if (draftState.undoHistory.length > 10) {
+        draftState.undoHistory.shift(); // Remove oldest undo
+      }
+
+      console.log(`✅ Successfully undid pick: ${team.name} - ${player.player_name} (${player.position})`);
+      console.log(`📊 Draft state: Pick ${draftState.currentPick + 1}, Available players: ${draftState.availablePlayers.length}`);
+      console.log(`📝 Undo history: ${draftState.undoHistory.length} recent undos`);
 
       // Broadcast updated state
       io.to(`draft-${draftId}`).emit('draft-state', draftState);
+      
+      // Send success notification
+      socket.emit('draft-success', { 
+        message: `Successfully undid pick: ${player.player_name} (${player.position}) from ${team.name}` 
+      });
 
     } catch (error) {
       console.error('💥 Error in admin-undo-last-pick handler:', error);
-      socket.emit('draft-error', { message: 'Server error during undo' });
+      socket.emit('draft-error', { message: 'Server error during undo operation' });
     }
   });
 

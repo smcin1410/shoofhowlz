@@ -58,10 +58,26 @@ const AdminPanel = ({ socket, draftState }) => {
                   socket.emit('admin-undo-last-pick');
                 }
               }}
-              className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+              disabled={!draftState?.pickHistory || draftState.pickHistory.length === 0}
+              className={`w-full px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                draftState?.pickHistory && draftState.pickHistory.length > 0
+                  ? 'bg-red-600 hover:bg-red-700 text-white'
+                  : 'bg-gray-500 text-gray-300 cursor-not-allowed'
+              }`}
             >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
               Undo Last Pick
+              {draftState?.pickHistory && draftState.pickHistory.length > 0 && (
+                <span className="bg-red-800 text-white px-2 py-0.5 rounded text-xs">
+                  {draftState.pickHistory.length}
+                </span>
+              )}
             </button>
+            <p className="text-xs text-gray-400 mt-1">
+              Removes the last pick and returns the player to the available pool. Timer resets for the team.
+            </p>
           </div>
         </div>
       )}

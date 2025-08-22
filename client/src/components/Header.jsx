@@ -430,15 +430,26 @@ const Header = ({ socket, draftState, onReturnToDashboard, onReturnToLobby, onFo
                         
                         <button
                           onClick={() => {
-                            // TODO: Implement undo pick functionality
-                            alert('Undo pick functionality coming soon!');
+                            if (window.confirm('Are you sure you want to undo the last pick? This cannot be reversed.')) {
+                              socket.emit('admin-undo-last-pick');
+                            }
                           }}
-                          className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded flex items-center gap-2"
+                          disabled={!draftState?.pickHistory || draftState.pickHistory.length === 0}
+                          className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 transition-colors ${
+                            draftState?.pickHistory && draftState.pickHistory.length > 0
+                              ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                              : 'text-gray-500 cursor-not-allowed'
+                          }`}
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                           </svg>
                           Undo Last Pick
+                          {draftState?.pickHistory && draftState.pickHistory.length > 0 && (
+                            <span className="ml-auto text-xs bg-red-600 text-white px-1.5 py-0.5 rounded">
+                              {draftState.pickHistory.length}
+                            </span>
+                          )}
                         </button>
                       </div>
                     </div>

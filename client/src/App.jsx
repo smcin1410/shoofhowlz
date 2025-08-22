@@ -500,6 +500,11 @@ const MainApp = () => {
         setAppView('dashboard');
       });
 
+      newSocket.on('draft-success', (data) => {
+        console.log('✅ Draft success:', data);
+        alert(`Success: ${data.message}`);
+      });
+
       newSocket.on('draft-complete', (draftState) => {
         console.log('🏁 Draft completed, updating draft state');
         setIsDraftComplete(true);
