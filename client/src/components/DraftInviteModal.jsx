@@ -14,10 +14,36 @@ const DraftInviteModal = ({
   if (!isOpen || !draft) return null;
 
   const baseUrl = window.location.origin;
-  const draftLink = `${baseUrl}/drafts/${draft.id}`;
+  // Generate team-specific invite links for each team with an email
+  const generateTeamInviteLinks = () => {
+    if (!draft.teams || !Array.isArray(draft.teams)) {
+      return [`${baseUrl}/join/${draft.id}/team/1`]; // Fallback to team 1
+    }
+    
+    return draft.teams
+      .filter(team => team.email && team.email.trim() !== '')
+      .map(team => ({
+        teamId: team.id,
+        teamName: team.name,
+        email: team.email,
+        inviteLink: `${baseUrl}/join/${draft.id}/team/${team.id}`
+      }));
+  };
+  
+  const teamInviteLinks = generateTeamInviteLinks();
+  const draftLink = teamInviteLinks.length > 0 ? teamInviteLinks[0].inviteLink : `${baseUrl}/join/${draft.id}/team/1`;
   
   const generateEmailInvite = () => {
     const subject = `Fantasy Draft Invitation - ${draft.leagueName}`;
+    
+    // Generate team-specific invitation message
+    let teamLinksText = '';
+    if (teamInviteLinks.length > 0) {
+      teamLinksText = teamInviteLinks.map(team => 
+        `\n🏈 ${team.teamName}:\n${team.inviteLink}`
+      ).join('\n');
+    }
+    
     const defaultMessage = customMessage || `You're invited to join our fantasy football draft!
 
 🏈 League: ${draft.leagueName}
@@ -26,10 +52,10 @@ const DraftInviteModal = ({
 ⏰ Time Limit: ${draft.timeClock || 2} minutes per pick
 📊 Rounds: ${draft.rounds || 16}
 
-Join the draft here:
-${draftLink}
+${teamInviteLinks.length > 0 ? 'Your team-specific invite links:' : 'Join the draft here:'}
+${teamInviteLinks.length > 0 ? teamLinksText : draftLink}
 
-Once you join, you'll be able to claim a team in the lobby and participate in the draft.
+Once you join, you'll be automatically assigned to your team and can participate in the draft.
 
 Good luck and may the best team win!
 
@@ -44,10 +70,21 @@ Draft ID: ${draft.id}`;
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(draftLink).then(() => {
-      alert('✅ Draft link copied to clipboard!');
+    let textToCopy = '';
+    
+    if (teamInviteLinks.length > 0) {
+      textToCopy = `Fantasy Draft Invitation - ${draft.leagueName}\n\n`;
+      textToCopy += teamInviteLinks.map(team => 
+        `${team.teamName}:\n${team.inviteLink}`
+      ).join('\n\n');
+    } else {
+      textToCopy = draftLink;
+    }
+    
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      alert('✅ Draft links copied to clipboard!');
     }).catch(() => {
-      alert(`📱 Draft Link:\n\n${draftLink}`);
+      alert(`📱 Draft Links:\n\n${textToCopy}`);
     });
   };
 
@@ -67,10 +104,14 @@ Draft ID: ${draft.id}`;
 
   const handleShareNative = () => {
     if (navigator.share) {
+      const shareText = teamInviteLinks.length > 0 
+        ? `Join our fantasy football draft: ${draft.leagueName}\n\n${teamInviteLinks.map(team => `${team.teamName}: ${team.inviteLink}`).join('\n')}`
+        : `Join our fantasy football draft: ${draft.leagueName}`;
+        
       navigator.share({
         title: `Fantasy Draft - ${draft.leagueName}`,
-        text: `Join our fantasy football draft: ${draft.leagueName}`,
-        url: draftLink
+        text: shareText,
+        url: teamInviteLinks.length > 0 ? teamInviteLinks[0].inviteLink : draftLink
       });
     } else {
       handleCopyLink();
@@ -99,7 +140,19 @@ Draft ID: ${draft.id}`;
             <div>⏰ {draft.timeClock || 2} minutes per pick</div>
             <div>📊 {draft.rounds || 16} rounds</div>
             <div className="pt-2 border-t border-gray-700">
-              <div className="font-mono text-xs break-all text-blue-400">{draftLink}</div>
+              {teamInviteLinks.length > 0 ? (
+                <div>
+                  <div className="text-blue-200 font-medium mb-2">Team Invite Links:</div>
+                  {teamInviteLinks.map((team, index) => (
+                    <div key={team.teamId} className="mb-2 p-2 bg-gray-800 rounded">
+                      <div className="text-blue-300 font-medium">{team.teamName}</div>
+                      <div className="font-mono text-xs break-all text-blue-400">{team.inviteLink}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="font-mono text-xs break-all text-blue-400">{draftLink}</div>
+              )}
             </div>
           </div>
         </div>

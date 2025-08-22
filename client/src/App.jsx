@@ -11,6 +11,7 @@ import DisplayPage from './components/DisplayPage';
 import ResultsPage from './components/ResultsPage';
 import DraftOrderAnnouncement from './components/DraftOrderAnnouncement';
 import DirectJoinPage from './components/DirectJoinPage';
+import DraftRedirect from './components/DraftRedirect';
 import { useSound } from './hooks/useSound';
 import ConnectionStatus from './components/ConnectionStatus';
 
@@ -181,6 +182,17 @@ const MainApp = () => {
         console.error('Error parsing saved user:', error);
         localStorage.removeItem('currentUser');
       }
+    }
+    
+    // Check for redirect draft ID from /drafts/:draftId route
+    const redirectDraftId = localStorage.getItem('redirectDraftId');
+    if (redirectDraftId) {
+      console.log('🔄 Found redirect draft ID:', redirectDraftId);
+      localStorage.removeItem('redirectDraftId'); // Clear it after reading
+      
+      // Set the current draft to trigger joining
+      setCurrentDraft({ id: redirectDraftId });
+      setAppView('dashboard'); // Ensure we're on dashboard to show the draft
     }
   }, []);
 
@@ -1194,6 +1206,7 @@ const App = () => {
         <Route path="/display" element={<DisplayPage />} />
         <Route path="/results" element={<ResultsPage />} />
         <Route path="/join/:draftId/team/:teamId" element={<DirectJoinPage />} />
+        <Route path="/drafts/:draftId" element={<DraftRedirect />} />
       </Routes>
     </div>
   );
