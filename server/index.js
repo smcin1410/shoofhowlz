@@ -364,6 +364,38 @@ function loadDraftsFromFile() {
   }
 }
 
+// Timer health check function
+function checkTimerHealth() {
+  console.log(`🔍 Timer health check - Active timers: ${draftTimers.size}`);
+  
+  draftTimers.forEach((timerInfo, draftId) => {
+    const draftState = activeDrafts.get(draftId);
+    
+    if (!draftState) {
+      console.log(`⚠️ Orphaned timer found for draft ${draftId} - cleaning up`);
+      clearInterval(timerInfo.interval);
+      draftTimers.delete(draftId);
+      return;
+    }
+
+    if (draftState.isComplete) {
+      console.log(`⚠️ Timer running for completed draft ${draftId} - cleaning up`);
+      clearInterval(timerInfo.interval);
+      draftTimers.delete(draftId);
+      return;
+    }
+
+    if (draftState.isPaused && timerInfo.interval) {
+      console.log(`⚠️ Timer inconsistency in draft ${draftId} - fixing`);
+      clearInterval(timerInfo.interval);
+      draftTimers.delete(draftId);
+    }
+  });
+}
+
+// Run health check every 30 seconds
+setInterval(checkTimerHealth, 30000);
+
 // Save drafts to file
 function saveDraftsToFile() {
   try {
@@ -921,13 +953,89 @@ function draftPlayer(draftId, playerId, isAutoPick = false) {
   }
 }
 
+function validateTimerState(draftId) {
+  const draftState = activeDrafts.get(draftId);
+  const timerInfo = draftTimers.get(draftId);
+  
+  if (!draftState) {
+    console.log('⚠️ Draft state not found for timer validation:', draftId);
+    return false;
+  }
+
+  // Check for timer state inconsistencies
+  if (draftState.isPaused && timerInfo?.interval) {
+    console.log('⚠️ Timer inconsistency: Draft paused but timer running');
+    return false;
+  }
+
+  if (!draftState.isPaused && !timerInfo?.interval && draftState.isDraftStarted && !draftState.isComplete) {
+    console.log('⚠️ Timer inconsistency: Draft active but no timer running');
+    return false;
+  }
+
+  return true;
+}
+
+function recoverTimerState(draftId) {
+  console.log(`🔧 Attempting timer recovery for draft ${draftId}`);
+  
+  const draftState = activeDrafts.get(draftId);
+  const timerInfo = draftTimers.get(draftId);
+  
+  if (!draftState) {
+    console.log('⚠️ No draft state found for recovery');
+    return;
+  }
+
+  // Clear any stuck timers
+  if (timerInfo?.interval) {
+    clearInterval(timerInfo.interval);
+    draftTimers.delete(draftId);
+    console.log('🧹 Cleared stuck timer during recovery');
+  }
+
+  // Reset timer state
+  draftState.isPaused = false;
+  draftState.timeRemaining = 0;
+
+  // Broadcast reset
+  io.to(`draft-${draftId}`).emit('timer-update', {
+    timeRemaining: 0,
+    canExtend: false,
+    currentPick: draftState.currentPick + 1
+  });
+
+  // Start fresh timer
+  setTimeout(() => {
+    startDraftTimer(draftId);
+  }, 500);
+
+  console.log('✅ Timer recovery completed');
+}
+
 function startDraftTimer(draftId) {
-  console.log(`🔍 TIMER DEBUG: startDraftTimer called for draft ${draftId}`);
+  console.log(`⏰ TIMER DEBUG: startDraftTimer called for draft ${draftId}`);
   
   try {
     const draftState = activeDrafts.get(draftId);
-    if (!draftState?.isDraftStarted || draftState.currentPick >= draftState.draftOrder.length) {
-      console.log('⚠️ Cannot start timer - draft not started or completed:', draftId);
+    if (!draftState) {
+      console.log('⚠️ Draft state not found for timer start:', draftId);
+      return;
+    }
+
+    // Validate draft state
+    if (!draftState.isDraftStarted) {
+      console.log('⚠️ Cannot start timer - draft not started:', draftId);
+      return;
+    }
+
+    if (draftState.isComplete) {
+      console.log('⚠️ Cannot start timer - draft is complete:', draftId);
+      return;
+    }
+
+    if (draftState.currentPick >= draftState.draftOrder.length) {
+      console.log('⚠️ Cannot start timer - draft is complete:', draftId);
       return;
     }
 
@@ -944,6 +1052,9 @@ function startDraftTimer(draftId) {
       clearInterval(existingTimer.interval);
       draftTimers.delete(draftId);
     }
+
+    // Reset pause state
+    draftState.isPaused = false;
 
     // Check if current team should auto-pick
     // Only auto-pick if team is explicitly marked as absent AND has auto-pick enabled
@@ -1942,10 +2053,17 @@ io.on('connection', (socket) => {
       }
       
       // Reset timer state
+      const draftState = activeDrafts.get(draftId);
+      if (draftState) {
+        draftState.isPaused = false;
+        draftState.timeRemaining = 0;
+      }
+      
+      // Send timer reset
       io.to(`draft-${draftId}`).emit('timer-update', {
         timeRemaining: 0,
         canExtend: false,
-        currentPick: 0
+        currentPick: draftState?.currentPick + 1 || 0
       });
       
       // Start new timer with small delay
@@ -2069,7 +2187,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Admin pause timer
+  // Admin pause timer - Enhanced
   socket.on('admin-pause-timer', () => {
     try {
       // Find the draft this admin is connected to
@@ -2101,9 +2219,17 @@ io.on('connection', (socket) => {
 
       // Set pause state
       draftState.isPaused = true;
+      draftState.timeRemaining = 0;
 
       // Broadcast updated state
       io.to(`draft-${draftId}`).emit('draft-state', draftState);
+      
+      // Send timer update to pause display
+      io.to(`draft-${draftId}`).emit('timer-update', {
+        timeRemaining: 0,
+        canExtend: false,
+        currentPick: draftState.currentPick + 1
+      });
 
     } catch (error) {
       console.error('💥 Error in admin-pause-timer handler:', error);
@@ -2111,7 +2237,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Admin resume timer
+  // Admin resume timer - Enhanced
   socket.on('admin-resume-timer', () => {
     try {
       // Find the draft this admin is connected to
@@ -2133,10 +2259,14 @@ io.on('connection', (socket) => {
         return;
       }
 
-      // Clear pause state
-      draftState.isPaused = false;
+      // Validate draft state
+      if (!draftState.isDraftStarted || draftState.isComplete) {
+        console.log('⚠️ Cannot resume timer - draft not active');
+        return;
+      }
 
-      // Start timer
+      // Clear pause state and start timer
+      draftState.isPaused = false;
       startDraftTimer(draftId);
 
       // Broadcast updated state
@@ -2284,11 +2414,27 @@ io.on('connection', (socket) => {
       // Move back to previous pick
       draftState.currentPick--;
 
-      // Reset timer if it's running (give the team time to make their pick again)
-      if (draftState.timeRemaining > 0) {
-        draftState.timeRemaining = draftState.timeClock * 60; // Reset to full time
-        console.log(`⏰ Reset timer to ${draftState.timeClock} minutes for team ${team.name}`);
+      // Clear existing timer and reset timer state
+      const timerInfo = draftTimers.get(draftId);
+      if (timerInfo?.interval) {
+        clearInterval(timerInfo.interval);
+        draftTimers.delete(draftId);
+        console.log('⏹️ Cleared timer after undo operation');
       }
+
+      // Reset timer state to paused
+      draftState.isPaused = true;
+      draftState.timeRemaining = 0;
+
+      // Broadcast updated state
+      io.to(`draft-${draftId}`).emit('draft-state', draftState);
+
+      // Send timer update to pause display
+      io.to(`draft-${draftId}`).emit('timer-update', {
+        timeRemaining: 0,
+        canExtend: false,
+        currentPick: draftState.currentPick + 1
+      });
 
       // Track undo operation
       draftState.lastUndoTime = Date.now();
@@ -2326,6 +2472,35 @@ io.on('connection', (socket) => {
     } catch (error) {
       console.error('💥 Error in admin-undo-last-pick handler:', error);
       socket.emit('draft-error', { message: 'Server error during undo operation' });
+    }
+  });
+
+  // Admin timer recovery
+  socket.on('admin-recover-timer', () => {
+    try {
+      // Find the draft this admin is connected to
+      const rooms = Array.from(socket.rooms);
+      const draftRoom = rooms.find(room => room.startsWith('draft-'));
+      if (!draftRoom) {
+        console.log('⚠️ Admin not connected to any draft');
+        socket.emit('draft-error', { message: 'Not connected to any draft' });
+        return;
+      }
+
+      const draftId = draftRoom.replace('draft-', '');
+      console.log(`📥 Admin timer recovery request for draft ${draftId}`);
+
+      // Use the recovery function
+      recoverTimerState(draftId);
+      
+      // Send success notification
+      socket.emit('draft-success', { 
+        message: 'Timer recovery completed successfully' 
+      });
+
+    } catch (error) {
+      console.error('💥 Error in admin-recover-timer handler:', error);
+      socket.emit('draft-error', { message: 'Server error during timer recovery' });
     }
   });
 

@@ -18,8 +18,11 @@ const Header = ({ socket, draftState, onReturnToDashboard, onReturnToLobby, onFo
     if (!socket) return;
 
     const handleTimerUpdate = (data) => {
+      console.log('📡 Timer update received:', data);
       setTimeRemaining(data.timeRemaining);
       setCanExtend(data.canExtend);
+      
+      // Handle timer alerts
       if (data.timeRemaining === 10 && !isMuted) {
         try {
           playTimerAlert();
@@ -29,18 +32,22 @@ const Header = ({ socket, draftState, onReturnToDashboard, onReturnToLobby, onFo
       }
     };
 
-    socket.on('timer-update', handleTimerUpdate);
+    const handleDraftStateUpdate = (newDraftState) => {
+      // Reset timer if draft state changes significantly
+      if (newDraftState.isPaused) {
+        setTimeRemaining(0);
+        setCanExtend(false);
+      }
+    };
 
-    // Reset timer state when draft state changes (draft starts)
-    if (draftState?.isDraftStarted && !draftState?.currentPick) {
-      setTimeRemaining(0);
-      setCanExtend(false);
-    }
+    socket.on('timer-update', handleTimerUpdate);
+    socket.on('draft-state', handleDraftStateUpdate);
 
     return () => {
       socket.off('timer-update', handleTimerUpdate);
+      socket.off('draft-state', handleDraftStateUpdate);
     };
-  }, [socket, draftState, isMuted, playTimerAlert]);
+  }, [socket, isMuted, playTimerAlert]);
 
   // Close commissioner tools dropdown when clicking outside
   useEffect(() => {
