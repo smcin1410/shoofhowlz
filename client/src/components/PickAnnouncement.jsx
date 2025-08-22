@@ -1,14 +1,7 @@
 import { useEffect } from 'react';
 
 const PickAnnouncement = ({ pick, onClose, draftState, socket }) => {
-  useEffect(() => {
-    // Auto-dismiss after 10 seconds instead of 5
-    const timer = setTimeout(() => {
-      onClose();
-    }, 10000);
-
-    return () => clearTimeout(timer);
-  }, [onClose]);
+  // Removed auto-dismiss functionality - modal will only close when Continue is clicked
 
   const getPositionColor = (position) => {
     switch (position) {
@@ -55,8 +48,8 @@ const PickAnnouncement = ({ pick, onClose, draftState, socket }) => {
   };
 
   const handleContinue = () => {
-    if (socket) {
-      socket.emit('continue-draft');
+    if (socket && draftState?.id) {
+      socket.emit('continue-draft', { draftId: draftState.id });
     }
     onClose();
   };
@@ -122,10 +115,7 @@ const PickAnnouncement = ({ pick, onClose, draftState, socket }) => {
             Continue
           </button>
           
-          {/* Auto-dismiss indicator */}
-          <p className="text-xs text-gray-400 mt-3">
-            Auto-dismissing in 10 seconds...
-          </p>
+
         </div>
       </div>
     </div>

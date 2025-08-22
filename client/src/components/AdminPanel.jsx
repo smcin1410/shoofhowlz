@@ -1,115 +1,70 @@
 import React, { useState } from 'react';
 
 const AdminPanel = ({ socket, draftState }) => {
-  const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
 
   if (!draftState || !draftState.isDraftStarted) {
     return null;
   }
 
-  const handleManualPick = () => {
-    if (selectedPlayer && socket) {
-      const currentTeam = draftState.teams[draftState.draftOrder[draftState.currentPick] - 1];
-      const confirmation = window.confirm(`🎯 Admin Pick Confirmation\n\nDraft ${selectedPlayer.player_name} (${selectedPlayer.position} - ${selectedPlayer.team}) for ${currentTeam?.name}?\n\nThis action cannot be undone.`);
-      if (confirmation) {
-        socket.emit('admin-draft-player', { playerId: selectedPlayer.rank });
-        setSelectedPlayer(null);
-        setSearchQuery('');
-      }
-    }
-  };
-
-  const filteredPlayers = searchQuery
-    ? draftState.availablePlayers.filter(p =>
-        p.player_name.toLowerCase().includes(searchQuery.toLowerCase())
-      ).slice(0, 5) // Show top 5 matches
-    : [];
-
   return (
-    <div className="bg-gray-800 rounded-lg p-4 border border-yellow-500">
-      <h3 className="text-lg font-bold text-yellow-400 mb-4">Commissioner Controls</h3>
-      <div className="space-y-4">
-        {/* Manual Pick Entry */}
-        <div>
-          <h4 className="font-semibold text-white mb-2">Manual Pick for Current Team</h4>
-          <div className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setSelectedPlayer(null);
-              }}
-              placeholder="Search for a player..."
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
-            />
-            {searchQuery && (
-              <div className="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
-                {filteredPlayers.length > 0 ? (
-                  filteredPlayers.map(player => (
-                    <div
-                      key={player.rank}
-                      onClick={() => {
-                        setSelectedPlayer(player);
-                        setSearchQuery(player.player_name);
-                      }}
-                      className="px-3 py-2 cursor-pointer hover:bg-gray-600 text-white"
-                    >
-                      {player.player_name} ({player.position} - {player.team})
-                    </div>
-                  ))
-                ) : (
-                  <div className="px-3 py-2 text-gray-400">No players found</div>
-                )}
-              </div>
-            )}
-          </div>
-          <button
-            onClick={handleManualPick}
-            disabled={!selectedPlayer}
-            className="w-full mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
-          >
-            Confirm Pick
-          </button>
-        </div>
-
-        {/* Pause/Resume Timer */}
-        <div>
-          <h4 className="font-semibold text-white mb-2">Draft Clock</h4>
-          <div className="flex gap-2">
-            <button
-              onClick={() => socket.emit('admin-pause-timer')}
-              disabled={draftState.isPaused}
-              className="flex-1 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
-            >
-              Pause Timer
-            </button>
-            <button
-              onClick={() => socket.emit('admin-resume-timer')}
-              disabled={!draftState.isPaused}
-              className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
-            >
-              Resume Timer
-            </button>
-          </div>
-        </div>
-
-        {/* Undo Last Pick */}
-        <div>
-          <h4 className="font-semibold text-white mb-2">Manage Picks</h4>
-          <button
-            onClick={() => {
-              if (window.confirm('Are you sure you want to undo the last pick? This cannot be reversed.')) {
-                socket.emit('admin-undo-last-pick');
-              }
-            }}
-            className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
-          >
-            Undo Last Pick
-          </button>
-        </div>
+    <div className="bg-gray-800 rounded-lg border border-yellow-500">
+      {/* Header with toggle */}
+      <div 
+        className="p-4 cursor-pointer flex items-center justify-between"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <h3 className="text-lg font-bold text-yellow-400">Commissioner Controls</h3>
+        <svg 
+          className={`w-5 h-5 text-yellow-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
       </div>
+
+      {/* Collapsible content */}
+      {isExpanded && (
+        <div className="px-4 pb-4 space-y-4 border-t border-gray-700">
+          {/* Pause/Resume Timer */}
+          <div>
+            <h4 className="font-semibold text-white mb-2">Draft Clock</h4>
+            <div className="flex gap-2">
+              <button
+                onClick={() => socket.emit('admin-pause-timer')}
+                disabled={draftState.isPaused}
+                className="flex-1 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+              >
+                Pause Timer
+              </button>
+              <button
+                onClick={() => socket.emit('admin-resume-timer')}
+                disabled={!draftState.isPaused}
+                className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+              >
+                Resume Timer
+              </button>
+            </div>
+          </div>
+
+          {/* Undo Last Pick */}
+          <div>
+            <h4 className="font-semibold text-white mb-2">Manage Picks</h4>
+            <button
+              onClick={() => {
+                if (window.confirm('Are you sure you want to undo the last pick? This cannot be reversed.')) {
+                  socket.emit('admin-undo-last-pick');
+                }
+              }}
+              className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+            >
+              Undo Last Pick
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

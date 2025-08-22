@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { createBeepSound } from '../utils/audioUtils';
 
-const Header = ({ socket, draftState, onReturnToDashboard, isCommissioner, user, onAdminAutoDraft }) => {
+const Header = ({ socket, draftState, onReturnToDashboard, onReturnToLobby, onForceCompleteDraft, isCommissioner, user, onAdminAutoDraft }) => {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [canExtend, setCanExtend] = useState(false);
   const [playTimerAlert] = useState(() => createBeepSound(800, 0.5));
   const [isMuted, setIsMuted] = useState(false);
+  const [showCommissionerTools, setShowCommissionerTools] = useState(false);
 
   const handleStartDraftClock = () => {
     if (socket && draftState?.id) {
@@ -40,6 +41,20 @@ const Header = ({ socket, draftState, onReturnToDashboard, isCommissioner, user,
       socket.off('timer-update', handleTimerUpdate);
     };
   }, [socket, draftState, isMuted, playTimerAlert]);
+
+  // Close commissioner tools dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showCommissionerTools && !event.target.closest('.commissioner-tools')) {
+        setShowCommissionerTools(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCommissionerTools]);
 
   const handleExtendTime = () => {
     if (socket) {
@@ -102,6 +117,19 @@ const Header = ({ socket, draftState, onReturnToDashboard, isCommissioner, user,
               )}
             </div>
             
+            {/* Return to Lobby Button - Always show on draft page */}
+            {onReturnToLobby && (
+              <button
+                onClick={onReturnToLobby}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors duration-200 flex items-center gap-1 border border-blue-700 whitespace-nowrap"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span className="hidden sm:inline">Return to Lobby</span>
+              </button>
+            )}
+            
             {/* Lobby Button - Only show when draft is started */}
             {draftState?.isDraftStarted && onReturnToDashboard && (
               <button
@@ -131,13 +159,122 @@ const Header = ({ socket, draftState, onReturnToDashboard, isCommissioner, user,
               </button>
             )}
 
-            {/* Commissioner Status Indicator */}
+            {/* Commissioner Tools */}
             {isCommissioner && (
-              <div className="bg-green-600 text-white px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1 border border-green-700 whitespace-nowrap">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="hidden sm:inline">Commissioner</span>
+              <div className="relative commissioner-tools">
+                <button
+                  onClick={() => setShowCommissionerTools(!showCommissionerTools)}
+                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1 border border-green-700 whitespace-nowrap"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span className="hidden sm:inline">Commissioner Tools</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {/* Commissioner Tools Dropdown */}
+                {showCommissionerTools && (
+                  <div className="absolute top-full right-0 mt-1 w-64 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50">
+                    <div className="p-3">
+                      <h3 className="text-white font-medium mb-3 text-sm">Commissioner Tools</h3>
+                      
+                      {/* Draft Controls */}
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => {
+                            if (socket && draftState?.id) {
+                              socket.emit('pause-draft', { draftId: draftState.id });
+                            }
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded flex items-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Pause Draft
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            if (socket && draftState?.id) {
+                              socket.emit('resume-draft', { draftId: draftState.id });
+                            }
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded flex items-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Resume Draft
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            if (socket && draftState?.id) {
+                              socket.emit('reset-timer', { draftId: draftState.id });
+                            }
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded flex items-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Reset Timer
+                        </button>
+                      </div>
+                      
+                      <div className="border-t border-gray-600 my-2"></div>
+                      
+                      {/* Admin Controls */}
+                      <div className="space-y-2">
+                        <button
+                          onClick={onForceCompleteDraft}
+                          className="w-full text-left px-3 py-2 text-sm text-red-300 hover:bg-red-900/20 rounded flex items-center gap-2 border border-red-600/30"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Force Complete Draft
+                        </button>
+                      </div>
+                      
+                      <div className="border-t border-gray-600 my-2"></div>
+                      
+                      {/* Edit Features */}
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => {
+                            // TODO: Implement edit pick functionality
+                            alert('Edit pick functionality coming soon!');
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded flex items-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          Edit Last Pick
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            // TODO: Implement undo pick functionality
+                            alert('Undo pick functionality coming soon!');
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded flex items-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                          </svg>
+                          Undo Last Pick
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

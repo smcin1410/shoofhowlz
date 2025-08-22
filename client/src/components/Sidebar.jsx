@@ -32,7 +32,7 @@ const Sidebar = ({ socket, draftState, isCommissioner }) => {
     
     // Show only the current team's drafted players
     return draftState.pickHistory
-      .filter(pick => pick.teamId === currentTeam.id)
+      .filter(pick => pick.team && pick.team.id === currentTeam.id)
       .map(pick => ({
         player: pick.player,
         pickIndex: pick.pickIndex

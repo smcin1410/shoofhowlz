@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import PlayerCard from './PlayerCard';
+import DraftBoard from './DraftBoard';
 
 const MainContent = ({ socket, draftState, activeTab, setActiveTab, fullWidth = false }) => {
   const [filteredPlayers, setFilteredPlayers] = useState([]);
@@ -258,117 +259,18 @@ const MainContent = ({ socket, draftState, activeTab, setActiveTab, fullWidth = 
 
       {/* Full Draft Board Tab */}
       {activeTab === 'draft-board' && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-            <div className="text-sm text-gray-400 text-center sm:text-left">
-              Full draft results - {draftState?.pickHistory?.length || 0} picks made
-              {draftState?.draftOrder && (
-                <span className="ml-2">
-                  ({Math.ceil(draftState.draftOrder.length / (draftState?.teams?.length || 1))} rounds total)
-                </span>
-              )}
-            </div>
-            
-            {/* Zoom Controls */}
-            <div className="flex items-center justify-center sm:justify-end gap-2">
-              <button
-                onClick={handleZoomOut}
-                className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-                title="Zoom Out (-)"
-              >
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
-                </svg>
-              </button>
-              <span className="text-sm text-gray-300 min-w-[60px] text-center">
-                {Math.round(zoomLevel * 100)}%
-              </span>
-              <button
-                onClick={handleZoomIn}
-                className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-                title="Zoom In (+)"
-              >
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7M13 10H7" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setZoomLevel(1)}
-                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-                title="Reset Zoom (0)"
-              >
-                Reset
-              </button>
-            </div>
-          </div>
-
-          {/* Draft Board Grid - Mobile Optimized */}
-          <div className="bg-gray-800 rounded-lg p-4 overflow-x-auto">
-            <div 
-              className="grid grid-cols-13 gap-1 min-w-max"
-              style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top left' }}
-            >
-              {/* Header Row */}
-              <div className="bg-gray-700 text-white text-xs font-bold p-2 rounded text-center sticky left-0 z-10">
-                Round
-              </div>
-              {draftState?.draftOrder?.slice(0, draftState?.teams?.length || 12).map((teamId, index) => {
-                const team = draftState.teams.find(t => t.id === teamId);
-                return (
-                  <div key={index} className="bg-gray-700 text-white text-xs font-bold p-2 rounded text-center">
-                    {team?.name || `Team ${teamId}`}
-                  </div>
-                );
-              })}
-
-              {/* Draft Rows - One per round */}
-              {Array.from({ length: 16 }, (_, roundIndex) => {
-                const round = roundIndex + 1;
-                const roundStartPick = roundIndex * (draftState?.teams?.length || 12);
-                const roundEndPick = roundStartPick + (draftState?.teams?.length || 12);
-
-                return (
-                  <div key={round} className="contents">
-                    {/* Round Number */}
-                    <div className="text-xs font-semibold p-2 rounded text-center sticky left-0 z-10 bg-gray-600 text-gray-300">
-                      {round}
-                    </div>
-                    
-                    {/* Team Picks for this Round */}
-                    {draftState?.draftOrder?.slice(0, draftState?.teams?.length || 12).map((teamId, teamIndex) => {
-                      const pickIndex = roundStartPick + teamIndex;
-                      const isCurrentPick = pickIndex === draftState.currentPick;
-                      const teamPick = draftState.pickHistory?.find(p => p.pickIndex === pickIndex);
-                      const team = draftState.teams.find(t => t.id === teamId);
-                      
-                      return (
-                        <div 
-                          key={teamIndex} 
-                          className={`text-xs p-2 rounded text-center min-h-[3rem] flex items-center justify-center ${
-                            isCurrentPick
-                              ? 'bg-blue-600 text-white border-2 border-yellow-400'
-                              : teamPick
-                                ? `${getPositionColor(teamPick.player.position)}`
-                                : 'bg-gray-700 text-gray-400'
-                          }`}
-                        >
-                          {teamPick ? (
-                            <div className="text-center">
-                              <div className="font-semibold">{teamPick.player.player_name}</div>
-                              <div className="text-xs opacity-75">{teamPick.player.position} • {teamPick.player.team}</div>
-                            </div>
-                          ) : (
-                            isCurrentPick ? 'On Clock' : ''
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <DraftBoard
+          draftState={draftState}
+          socket={socket}
+          zoomLevel={zoomLevel}
+          setZoomLevel={setZoomLevel}
+          getCurrentPickDisplay={getCurrentPickDisplay}
+          getTeamName={getTeamName}
+          getPositionColor={getPositionColor}
+          handleZoomIn={handleZoomIn}
+          handleZoomOut={handleZoomOut}
+          handleResetZoom={handleResetZoom}
+        />
       )}
     </div>
   );

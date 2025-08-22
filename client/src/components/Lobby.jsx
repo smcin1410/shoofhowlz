@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { formatTimeDisplay } from '../utils/timeUtils';
 
 const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo, draftState }) => {
   const [leagueName, setLeagueName] = useState('');
   const [leagueSize, setLeagueSize] = useState(12);
   const [draftType, setDraftType] = useState('snake');
   const [tokens, setTokens] = useState(3);
-  const [timeClock, setTimeClock] = useState(90); // in seconds
+  const [timeClock, setTimeClock] = useState(90); // in seconds - this should match one of the timeOptions values
   const [totalRounds, setTotalRounds] = useState(16);
   const [teams, setTeams] = useState(Array(12).fill().map((_, index) => ({
     name: `Team ${index + 1}`,
@@ -156,7 +157,7 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo, draf
       leagueSize,
       draftType,
       tokens,
-      timeClock,
+      timeClock: timeClock * 60, // Convert minutes to seconds for server storage
       totalRounds,
       teams,
       adminPassword: userInfo.adminPassword || null, // Use password from commissioner login
@@ -201,7 +202,7 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo, draf
       leagueSize,
       draftType,
       tokens,
-      timeClock,
+      timeClock: timeClock * 60, // Convert minutes to seconds for storage
       totalRounds,
       teams,
     };
@@ -226,7 +227,7 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo, draf
     setLeagueSize(config.leagueSize);
     setDraftType(config.draftType);
     setTokens(config.tokens);
-    setTimeClock(config.timeClock);
+    setTimeClock(Math.floor(config.timeClock / 60)); // Convert seconds back to minutes for display
     setTotalRounds(config.totalRounds || 16);
     setTeams(config.teams);
     
@@ -290,6 +291,56 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo, draf
     { value: 240, label: '4:00' }
   ];
 
+
+
+  // Add this function to check if draft is in progress
+  const isDraftInProgress = () => {
+    return draftState?.isDraftStarted && draftState.currentPick < draftState.draftOrder.length;
+  };
+
+  // Helper functions for better state detection
+  const isDraftCreated = () => {
+    return draftState?.teams && draftState.teams.length > 0;
+  };
+
+  const isDraftOrderGenerated = () => {
+    return draftState?.draftOrder && draftState.draftOrder.length > 0;
+  };
+
+  const isDraftStarted = () => {
+    return draftState?.isDraftStarted === true;
+  };
+
+  // Helper function to handle manual draft order input
+  const handleManualDraftOrder = () => {
+    const choice = confirm('Choose draft order type:\n\nOK = Manual draft order (you enter the order)\nCancel = Random draft order (auto-generated)');
+    
+    if (choice) {
+      // Manual draft order
+      const manualOrder = prompt('Enter manual draft order (comma-separated team numbers, e.g., 1,3,2,4,5,6,7,8,9,10,11,12):');
+      if (manualOrder) {
+        try {
+          const orderArray = manualOrder.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
+          if (orderArray.length === leagueSize) {
+            // Send manual draft order to server
+            if (socket) {
+              socket.emit('generate-draft-order', { manualDraftOrder: orderArray });
+            }
+          } else {
+            alert(`Please enter exactly ${leagueSize} team numbers separated by commas.`);
+          }
+        } catch (error) {
+          alert('Invalid format. Please enter numbers separated by commas.');
+        }
+      }
+    } else {
+      // Random draft order
+      if (socket) {
+        socket.emit('generate-draft-order');
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 py-8 px-4">
       {/* Join Lobby Modal */}
@@ -337,6 +388,20 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo, draf
             Set up your draft configuration and invite your league members
           </p>
         </div>
+
+        {/* Draft Status Indicator */}
+        {isDraftInProgress() && (
+          <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-center gap-3">
+              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+              <h3 className="text-lg font-semibold text-red-400">Draft Currently Running</h3>
+              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+            </div>
+            <p className="text-center text-red-300 text-sm mt-2">
+              The draft is in progress. Click "Join Live Draft" to participate.
+            </p>
+          </div>
+        )}
 
         {/* Main Form */}
         <div className="space-y-6">
@@ -660,7 +725,7 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo, draf
           <div className="flex flex-col sm:flex-row gap-4 pt-6">
             {userInfo.role === 'commissioner' && (
               <>
-                {!draftState?.teams || draftState.teams.length === 0 ? (
+                {!isDraftCreated() ? (
                   // Show Create Draft button if no draft exists
                   <button
                     onClick={handleCreateDraft}
@@ -668,18 +733,18 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo, draf
                   >
                     🚀 Create Draft
                   </button>
-                ) : !draftState.isDraftStarted ? (
+                ) : !isDraftStarted() ? (
                   // Show draft management buttons if draft exists but not started
                   <>
-                    {(!draftState.draftOrder || draftState.draftOrder.length === 0) && (
+                    {!isDraftOrderGenerated() && (
                       <button
-                        onClick={() => socket.emit('generate-draft-order')}
+                        onClick={handleManualDraftOrder}
                         className="flex-1 px-6 py-4 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium transition-colors"
                       >
-                        🎲 Generate Draft Order
+                        🎲 Generate/Set Draft Order
                       </button>
                     )}
-                    {draftState.draftOrder && draftState.draftOrder.length > 0 && (
+                    {isDraftOrderGenerated() && (
                       <button
                         onClick={handleStartDraft}
                         className="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
@@ -689,12 +754,35 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo, draf
                     )}
                   </>
                 ) : (
-                  // Draft is already started
-                  <div className="flex-1 px-6 py-4 bg-gray-600 text-white rounded-lg font-medium text-center">
-                    Draft In Progress...
-                  </div>
+                  // Draft is already started - show Join Live Draft button
+                  <button
+                    onClick={() => {
+                      // Navigate to draft page
+                      if (onDraftStart) {
+                        onDraftStart();
+                      }
+                    }}
+                    className="flex-1 px-6 py-4 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    🏈 Join Live Draft
+                  </button>
                 )}
               </>
+            )}
+            
+            {/* Show Join Draft button for participants when draft is in progress */}
+            {userInfo.role === 'participant' && isDraftInProgress() && (
+              <button
+                onClick={() => {
+                  // Navigate to draft page
+                  if (onDraftStart) {
+                    onDraftStart();
+                  }
+                }}
+                className="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              >
+                🏈 Join Draft
+              </button>
             )}
           </div>
         </div>

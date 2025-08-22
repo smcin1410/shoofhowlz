@@ -97,7 +97,7 @@ const DraftSummary = ({ draftState }) => {
         {/* Action Buttons */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">Draft Actions</h2>
-          <div className="flex gap-4">
+          <div className="flex gap-4 flex-wrap">
             <button
               onClick={handleGeneratePDF}
               disabled={isGeneratingPDF}
@@ -110,6 +110,20 @@ const DraftSummary = ({ draftState }) => {
               className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-md font-medium transition-colors"
             >
               Copy All Emails
+            </button>
+            <button
+              onClick={() => {
+                // Generate shareable link and navigate to results page
+                generateShareableLink();
+                const jsonString = JSON.stringify(draftState);
+                const compressed = pako.deflate(jsonString, { to: 'string' });
+                const encoded = btoa(compressed);
+                const url = `${window.location.origin}/results?data=${encoded}`;
+                window.open(url, '_blank');
+              }}
+              className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-md font-medium transition-colors"
+            >
+              📄 Open PDF Creator Page
             </button>
             <button
               onClick={generateShareableLink}

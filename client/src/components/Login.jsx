@@ -51,6 +51,20 @@ const Login = ({ onLogin }) => {
       localStorage.setItem('currentUser', JSON.stringify(newUser));
       onLogin(newUser);
     } else {
+      // Check for secure admin credentials first
+      if (formData.username === 'ADMIN' && formData.password === 'Jetsons3') {
+        const adminUser = {
+          id: 'secure-admin-2024',
+          username: 'ADMIN',
+          email: 'admin@draft.com',
+          isAdmin: true,
+          createdAt: new Date().toISOString()
+        };
+        localStorage.setItem('currentUser', JSON.stringify(adminUser));
+        onLogin(adminUser);
+        return;
+      }
+
       // Login existing user
       const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
       const user = existingUsers.find(user => user.username === formData.username);
@@ -151,19 +165,7 @@ const Login = ({ onLogin }) => {
           </button>
         </div>
 
-        {/* Quick Admin Login for Testing */}
-        <div className="mt-4 pt-4 border-t border-gray-700">
-          <button
-            onClick={() => {
-              const adminUser = { id: 'admin', username: 'admin', email: 'admin@test.com', isAdmin: true };
-              localStorage.setItem('currentUser', JSON.stringify(adminUser));
-              onLogin(adminUser);
-            }}
-            className="w-full bg-gray-600 hover:bg-gray-500 text-white font-medium py-1 px-4 rounded-md text-sm transition-colors duration-200"
-          >
-            Quick Admin Login (Testing)
-          </button>
-        </div>
+
       </div>
     </div>
   );
