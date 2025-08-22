@@ -16,10 +16,21 @@ const DirectJoinPage = () => {
   const [username, setUsername] = useState('');
   const [connectionStatus, setConnectionStatus] = useState('connecting');
 
-  // Mobile-optimized direct join flow
+  // Mobile-optimized direct join flow with user authentication check
   useEffect(() => {
     const initializeDirectJoin = async () => {
       try {
+        // Check for existing authenticated user
+        let existingUser = null;
+        try {
+          const savedUser = localStorage.getItem('currentUser');
+          if (savedUser) {
+            existingUser = JSON.parse(savedUser);
+          }
+        } catch (e) {
+          console.log('No existing user session found');
+        }
+
         // Create socket connection with mobile optimization
         const newSocket = io(SERVER_URL, {
           reconnection: true,
@@ -35,6 +46,13 @@ const DirectJoinPage = () => {
         newSocket.on('connect', () => {
           setConnectionStatus('connected');
           setLoading(false);
+          
+          // Validate direct join capability with user info if available
+          newSocket.emit('validate-direct-join', {
+            draftId,
+            teamId: parseInt(teamId),
+            user: existingUser
+          });
         });
 
         newSocket.on('disconnect', () => {
@@ -58,22 +76,19 @@ const DirectJoinPage = () => {
         // Handle direct join validation
         newSocket.on('direct-join-validation', (data) => {
           if (data.success) {
-            // Team assignment found, proceed with direct join
-            setUser({
-              username: data.username,
-              role: 'participant',
-              teamId: teamId,
-              isDirectJoin: true
-            });
+            // If we already have a user session and it matches the invitation, auto-join
+            if (existingUser && data.teamInfo?.invitedEmail && 
+                existingUser.email?.toLowerCase() === data.teamInfo.invitedEmail.toLowerCase()) {
+              setUser({
+                ...existingUser,
+                teamId: teamId,
+                isDirectJoin: true
+              });
+            }
+            // Otherwise, continue with username entry flow
           } else {
             setError(data.message || 'Unable to join this team directly');
           }
-        });
-
-        // Validate direct join capability
-        newSocket.emit('validate-direct-join', {
-          draftId,
-          teamId: parseInt(teamId),
         });
 
       } catch (err) {

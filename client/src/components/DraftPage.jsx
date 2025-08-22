@@ -5,7 +5,7 @@ import Sidebar from './Sidebar';
 import DraftCompletionModal from './DraftCompletionModal';
 import DraftProgressBar from './DraftProgressBar';
 
-const DraftPage = ({ socket, draftState, isCommissioner, user, onReturnToDashboard, onReturnToLobby, onForceCompleteDraft, onAdminAutoDraft }) => {
+const DraftPage = ({ socket, draftState, isCommissioner, user, teamAssignments, onReturnToDashboard, onReturnToLobby, onForceCompleteDraft, onAdminAutoDraft }) => {
   const [activeTab, setActiveTab] = useState('player-pool');
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [hasShownCompletionModal, setHasShownCompletionModal] = useState(false);
@@ -70,6 +70,8 @@ const DraftPage = ({ socket, draftState, isCommissioner, user, onReturnToDashboa
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             fullWidth={!showSidebar}
+            user={user}
+            teamAssignments={teamAssignments}
           />
           
           {/* Sidebar (Right Column) - Only show when Player Pool tab is active */}

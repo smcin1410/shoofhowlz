@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const PlayerCard = ({ player, socket, draftState }) => {
+const PlayerCard = ({ player, socket, draftState, user, teamAssignments }) => {
   const [showExpandedModal, setShowExpandedModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [draftError, setDraftError] = useState(null);
@@ -107,6 +107,40 @@ const PlayerCard = ({ player, socket, draftState }) => {
     return 'N/A';
   };
 
+  // Check if current user can draft (it's their turn)
+  const canUserDraft = () => {
+    if (!draftState || !user) return false;
+    
+    // Draft is complete
+    if (draftState.currentPick >= draftState.draftOrder?.length) {
+      return false;
+    }
+    
+    // Commissioner can always draft (admin override)
+    if (draftState.createdBy === user.username || draftState.createdBy === user.id) {
+      return true;
+    }
+    
+    // Check if it's this user's team's turn to draft
+    const currentTeamIndex = draftState.draftOrder[draftState.currentPick] - 1;
+    const currentTeam = draftState.teams?.[currentTeamIndex];
+    
+    if (!currentTeam || !teamAssignments) {
+      return false;
+    }
+    
+    // Find team assignment for the current team
+    const currentTeamAssignment = teamAssignments.find(a => a.teamId === currentTeam.id);
+    
+    if (!currentTeamAssignment) {
+      return false; // No assignment for this team
+    }
+    
+    // Check if the current user is assigned to the current team
+    return currentTeamAssignment.assignedUser === user.username || 
+           currentTeamAssignment.assignedUser === user.id;
+  };
+
   const handleCardClick = () => {
     setShowExpandedModal(true);
   };
@@ -124,16 +158,18 @@ const PlayerCard = ({ player, socket, draftState }) => {
     console.log('🎯 Draft confirmation - Player data:', player);
     console.log('🎯 Sending draft-player with:', { 
       playerId: player.rank,
-      draftId: draftState?.id 
+      draftId: draftState?.id,
+      username: user?.username
     });
     
     // Clear any previous errors
     setDraftError(null);
     
-    if (socket && draftState?.id) {
+    if (socket && draftState?.id && user?.username) {
       socket.emit('draft-player', { 
         playerId: player.rank,
-        draftId: draftState.id 
+        draftId: draftState.id,
+        username: user.username
       });
       
       // Don't close modal immediately - wait for success or error
@@ -234,16 +270,22 @@ const PlayerCard = ({ player, socket, draftState }) => {
           </div>
         </div>
 
-        {/* Draft Button */}
-        <button
-          onClick={handleDraftClick}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          Draft
-        </button>
+        {/* Draft Button - Only show when user can draft */}
+        {canUserDraft() ? (
+          <button
+            onClick={handleDraftClick}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Draft
+          </button>
+        ) : (
+          <div className="w-full bg-gray-600 text-gray-400 py-2 px-3 rounded text-sm font-medium text-center">
+            Not Your Turn
+          </div>
+        )}
       </div>
 
       {/* Expanded Player Modal */}
@@ -373,15 +415,21 @@ const PlayerCard = ({ player, socket, draftState }) => {
                 >
                   Close
                 </button>
-                <button
-                  onClick={handleDraftClick}
-                  className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Draft Player
-                </button>
+                {canUserDraft() ? (
+                  <button
+                    onClick={handleDraftClick}
+                    className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Draft Player
+                  </button>
+                ) : (
+                  <div className="flex-1 px-4 py-3 bg-gray-600 text-gray-400 rounded-lg font-medium text-center">
+                    Not Your Turn to Draft
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import PlayerCard from './PlayerCard';
 import DraftBoard from './DraftBoard';
 
-const MainContent = ({ socket, draftState, activeTab, setActiveTab, fullWidth = false }) => {
+const MainContent = ({ socket, draftState, activeTab, setActiveTab, fullWidth = false, user, teamAssignments }) => {
   const [filteredPlayers, setFilteredPlayers] = useState([]);
   const [positionFilter, setPositionFilter] = useState('All');
   const [teamFilter, setTeamFilter] = useState('All');
@@ -242,6 +242,8 @@ const MainContent = ({ socket, draftState, activeTab, setActiveTab, fullWidth = 
                 player={player} 
                 socket={socket}
                 draftState={draftState}
+                user={user}
+                teamAssignments={teamAssignments}
               />
             ))}
           </div>

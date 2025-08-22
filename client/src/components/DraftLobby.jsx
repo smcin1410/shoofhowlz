@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { formatTimeDisplay } from '../utils/timeUtils';
 import DraftSettingsModal from './DraftSettingsModal';
+import InvitationModal from './InvitationModal';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
 
@@ -10,20 +11,32 @@ const DraftLobby = ({
   isCommissioner,
   participants,
   socket,
+  teamAssignments,
+  setTeamAssignments,
   onStartDraft,
   onReturnToDashboard,
   onAdminAutoDraft,
   isDraftComplete,
   draftState
 }) => {
+  console.log('🏢 DraftLobby component rendering with props:', {
+    'User': user?.username,
+    'Current Draft': currentDraft?.leagueName,
+    'Draft ID': currentDraft?.id,
+    'Is Commissioner': isCommissioner,
+    'Participants': participants?.length,
+    'Socket Available': !!socket,
+    'Draft Complete': isDraftComplete,
+    'Draft State Available': !!draftState
+  });
   const [chatMessages, setChatMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [isReady, setIsReady] = useState(false);
   const [showDraftOrderModal, setShowDraftOrderModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showInvitationModal, setShowInvitationModal] = useState(false);
   const [draftOrderType, setDraftOrderType] = useState('random');
   const [manualDraftOrder, setManualDraftOrder] = useState([]);
-  const [teamAssignments, setTeamAssignments] = useState([]);
 
   // Helper function to log data size for analysis
   const logDataSize = (data, label) => {
@@ -383,9 +396,7 @@ const DraftLobby = ({
         // Update local participant state is handled by parent
       });
 
-      socket.on('team-assignments-update', (assignments) => {
-        setTeamAssignments(assignments);
-      });
+      // Team assignments are now handled in App.jsx
 
       // Enhanced team assignment notifications
       socket.on('team-pre-assigned', (data) => {
@@ -428,7 +439,6 @@ const DraftLobby = ({
         socket.off('lobby-chat-message');
         socket.off('chat-history');
         socket.off('participants-update');
-        socket.off('team-assignments-update');
         socket.off('team-pre-assigned');
         socket.off('team-claim-success');
         socket.off('team-claim-error');
@@ -550,9 +560,12 @@ const DraftLobby = ({
       teamAssignments
     };
 
-    console.log('Draft order selection:', draftOrderType);
-    console.log('Draft config:', draftConfig);
-    console.log('Socket available:', !!socket);
+    console.log('🎯 Draft configuration debug:', {
+      draftOrderType,
+      'currentDraft.draftType': currentDraft.draftType,
+      'draftConfig.draftType': draftConfig.draftType,
+      socketAvailable: !!socket
+    });
 
     if (draftOrderType === 'random') {
       // Emit generate draft order event first
@@ -765,19 +778,51 @@ const DraftLobby = ({
                             Team {assignment.teamId}:
                           </span>
                           <span className="text-gray-300 flex-1">{assignment.teamName}</span>
-                          <select
-                            value={assignment.assignedUser || ''}
-                            onChange={(e) => handleAssignTeam(index, e.target.value || null)}
-                            className="bg-gray-600 text-white text-sm px-2 py-1 rounded border border-gray-500 min-w-40"
-                          >
-                            <option value="">🔓 Available to Claim</option>
-                            <option value="LOCAL">🏠 Local In-Person Player</option>
-                            {participants.map(participant => (
-                              <option key={participant.id} value={participant.id}>
-                                🔒 {participant.username} {participant.isReady ? '✓' : '⏳'}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="flex items-center space-x-2 flex-1">
+                            <select
+                              value={assignment.assignedUser || ''}
+                              onChange={(e) => handleAssignTeam(index, e.target.value || null)}
+                              className="bg-gray-600 text-white text-sm px-2 py-1 rounded border border-gray-500 min-w-40 flex-1"
+                            >
+                              <option value="">🔓 Available to Claim</option>
+                              <option value="LOCAL">🏠 Local In-Person Player</option>
+                              {participants.map(participant => (
+                                <option key={participant.id} value={participant.id}>
+                                  🔒 {participant.username} {participant.isReady ? '✓' : '⏳'}
+                                </option>
+                              ))}
+                            </select>
+                            
+                            {/* Quick Action Buttons */}
+                            {assignment.assignedUser && (
+                              <button
+                                onClick={() => handleAssignTeam(index, null)}
+                                className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs"
+                                title="Clear this assignment"
+                              >
+                                ✕
+                              </button>
+                            )}
+                            
+                            {/* Swap functionality */}
+                            {assignment.assignedUser && index < teamAssignments.length - 1 && (
+                              <button
+                                onClick={() => {
+                                  const nextIndex = index + 1;
+                                  const currentUser = assignment.assignedUser;
+                                  const nextUser = teamAssignments[nextIndex].assignedUser;
+                                  
+                                  // Swap assignments
+                                  handleAssignTeam(index, nextUser);
+                                  handleAssignTeam(nextIndex, currentUser);
+                                }}
+                                className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs"
+                                title="Swap with next team"
+                              >
+                                ⇅
+                              </button>
+                            )}
+                          </div>
                           <div className="flex items-center space-x-2">
                             {isPreAssigned && (
                               <>
@@ -809,9 +854,92 @@ const DraftLobby = ({
                     })}
                   </div>
                   
-                  {/* Quick Assignment Section */}
+                  {/* Enhanced Commissioner Controls */}
                   <div className="mt-6 pt-4 border-t border-gray-600">
-                    <h3 className="text-white font-medium mb-3">Quick Pre-Assignment</h3>
+                    <h3 className="text-white font-medium mb-3">Commissioner Team Management</h3>
+                    
+                    {/* Quick Actions Row */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <button
+                        onClick={() => {
+                          // Clear all assignments
+                          const updates = teamAssignments.map(assignment => ({
+                            ...assignment,
+                            assignedUser: null
+                          }));
+                          setTeamAssignments(updates);
+                          
+                          // Use bulk assignment for efficiency
+                          const bulkAssignments = teamAssignments
+                            .filter(assignment => assignment.assignedUser) // Only teams that need clearing
+                            .map(assignment => ({
+                              teamId: assignment.teamId,
+                              assignedUser: null
+                            }));
+                          
+                          if (bulkAssignments.length > 0 && socket) {
+                            socket.emit('bulk-assign-teams', {
+                              draftId: currentDraft?.id,
+                              assignments: bulkAssignments,
+                              assignedBy: user.username
+                            });
+                          }
+                        }}
+                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center justify-center space-x-2"
+                        title="Remove all team assignments"
+                      >
+                        <span>🗑️</span>
+                        <span>Clear All Teams</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          // Shuffle all connected participants to random available teams
+                          const availableTeams = teamAssignments.filter(t => !t.assignedUser);
+                          const connectedParticipants = participants.filter(p => 
+                            p.role !== 'commissioner' && !teamAssignments.some(t => t.assignedUser === p.id)
+                          );
+                          
+                          // Shuffle participants
+                          const shuffled = [...connectedParticipants].sort(() => Math.random() - 0.5);
+                          const updates = [...teamAssignments];
+                          const bulkAssignments = [];
+                          
+                          shuffled.slice(0, availableTeams.length).forEach((participant, idx) => {
+                            const teamIndex = teamAssignments.findIndex(t => !t.assignedUser);
+                            if (teamIndex !== -1) {
+                              updates[teamIndex] = {
+                                ...updates[teamIndex],
+                                assignedUser: participant.id
+                              };
+                              
+                              bulkAssignments.push({
+                                teamId: updates[teamIndex].teamId,
+                                assignedUser: participant.id
+                              });
+                            }
+                          });
+                          
+                          setTeamAssignments(updates);
+                          
+                          // Use bulk assignment for efficiency
+                          if (bulkAssignments.length > 0 && socket) {
+                            socket.emit('bulk-assign-teams', {
+                              draftId: currentDraft?.id,
+                              assignments: bulkAssignments,
+                              assignedBy: user.username
+                            });
+                          }
+                        }}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center justify-center space-x-2"
+                        title="Randomly assign connected participants"
+                      >
+                        <span>🎲</span>
+                        <span>Shuffle Assign</span>
+                      </button>
+                    </div>
+                    
+                    <h4 className="text-white font-medium mb-3">Auto-Assignment</h4>
                     <p className="text-gray-400 text-sm mb-3">
                       Auto-assign all connected participants to available teams in order
                     </p>
@@ -857,33 +985,44 @@ const DraftLobby = ({
                     <p className="text-gray-400 text-sm mb-3">
                       Generate direct join links for each team to share with remote participants
                     </p>
-                    <button
-                      onClick={() => {
-                        const baseUrl = window.location.origin;
-                        const directLinks = teamAssignments.map(assignment => ({
-                          teamId: assignment.teamId,
-                          teamName: assignment.teamName,
-                          directLink: `${baseUrl}/join/${currentDraft?.id}/team/${assignment.teamId}`,
-                          shareableText: `Join ${assignment.teamName} in our fantasy draft: ${baseUrl}/join/${currentDraft?.id}/team/${assignment.teamId}`
-                        }));
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setShowInvitationModal(true)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center justify-center space-x-2"
+                      >
+                        <span>📨</span>
+                        <span>Send Invitations</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          const baseUrl = window.location.origin;
+                          const directLinks = teamAssignments.map(assignment => ({
+                            teamId: assignment.teamId,
+                            teamName: assignment.teamName,
+                            directLink: `${baseUrl}/join/${currentDraft?.id}/team/${assignment.teamId}`,
+                            shareableText: `Join ${assignment.teamName} in our fantasy draft: ${baseUrl}/join/${currentDraft?.id}/team/${assignment.teamId}`
+                          }));
 
-                        // Create shareable text
-                        const allLinksText = directLinks.map(link => 
-                          `${link.teamName}: ${link.directLink}`
-                        ).join('\n\n');
+                          // Create shareable text
+                          const allLinksText = directLinks.map(link => 
+                            `${link.teamName}: ${link.directLink}`
+                          ).join('\n\n');
 
-                        // Copy to clipboard
-                        navigator.clipboard.writeText(allLinksText).then(() => {
-                          alert('✅ Direct join links copied to clipboard!\n\nShare these links with remote participants for instant team access.');
-                        }).catch(() => {
-                          // Fallback: show in alert
-                          alert(`📱 Direct Join Links:\n\n${allLinksText}`);
-                        });
-                      }}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
-                    >
-                      📋 Generate & Copy Team Links
-                    </button>
+                          // Copy to clipboard
+                          navigator.clipboard.writeText(allLinksText).then(() => {
+                            alert('✅ Direct join links copied to clipboard!\n\nShare these links with remote participants for instant team access.');
+                          }).catch(() => {
+                            // Fallback: show in alert
+                            alert(`📱 Direct Join Links:\n\n${allLinksText}`);
+                          });
+                        }}
+                        className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center justify-center space-x-2"
+                      >
+                        <span>📋</span>
+                        <span>Quick Copy Links</span>
+                      </button>
+                    </div>
                     
                     <div className="mt-3 p-3 bg-blue-900 border border-blue-700 rounded text-sm">
                       <p className="text-blue-200">
@@ -1353,6 +1492,15 @@ const DraftLobby = ({
           // The settings will be updated via the socket event
           console.log('Settings updated:', newSettings);
         }}
+      />
+
+      {/* Enhanced Invitation Modal */}
+      <InvitationModal
+        isOpen={showInvitationModal}
+        onClose={() => setShowInvitationModal(false)}
+        currentDraft={currentDraft}
+        teamAssignments={teamAssignments}
+        user={user}
       />
     </div>
   );

@@ -68,6 +68,7 @@ const MainApp = () => {
   const [lastPickAnnounced, setLastPickAnnounced] = useState(null);
   const [isCommissioner, setIsCommissioner] = useState(false);
   const [participants, setParticipants] = useState([]);
+  const [teamAssignments, setTeamAssignments] = useState([]);
   const [showRecoveryMessage, setShowRecoveryMessage] = useState(false);
   const [connectedParticipantsCount, setConnectedParticipantsCount] = useState(0);
   const [serverStatus, setServerStatus] = useState('connecting'); // 'connecting', 'connected', 'disconnected', 'waking'
@@ -306,6 +307,28 @@ const MainApp = () => {
         setConnectedParticipantsCount(participantsList.length);
       });
 
+      // Team assignment event listeners
+      newSocket.on('team-assignments-update', (assignments) => {
+        console.log('📡 Team assignments updated:', assignments);
+        setTeamAssignments(assignments);
+      });
+
+      newSocket.on('team-claim-success', (data) => {
+        console.log('✅ Team claimed successfully:', data);
+      });
+
+      newSocket.on('team-claim-error', (error) => {
+        console.error('❌ Team claim error:', error);
+        alert(`Team Claim Error: ${error.message}`);
+      });
+
+      newSocket.on('draft-error', (error) => {
+        console.error('❌ Draft access error:', error);
+        alert(`Draft Access Error: ${error.message}`);
+        // Return to dashboard on permission error
+        setAppView('dashboard');
+      });
+
       newSocket.on('draft-complete', (draftState) => {
         console.log('🏁 Draft completed, updating draft state');
         setIsDraftComplete(true);
@@ -526,18 +549,35 @@ const MainApp = () => {
   };
 
   const handleJoinDraft = (draft) => {
+    console.log('🚀 handleJoinDraft called with draft:', draft);
+    console.log('🔍 Draft debug info:', {
+      'Draft ID': draft?.id,
+      'League Name': draft?.leagueName,
+      'Created By': draft?.createdBy,
+      'User ID': user?.id,
+      'User Username': user?.username,
+      'Is Commissioner': draft?.createdBy === user?.id,
+      'Socket Available': !!socket,
+      'Socket Connected': socket?.connected
+    });
+    
     setCurrentDraft(draft);
     setDraftConfig(draft);
     setIsCommissioner(draft.createdBy === user.id);
     setAppView('lobby');
     
+    console.log('🏢 Switching to lobby view');
+    
     // Join the draft room
     if (socket) {
+      console.log('📡 Emitting join-lobby event');
       socket.emit('join-lobby', {
         username: user.username,
         role: draft.createdBy === user.id ? 'commissioner' : 'participant',
         draftId: draft.id
       });
+    } else {
+      console.error('❌ Socket not available when joining lobby');
     }
   };
 
@@ -625,7 +665,7 @@ const MainApp = () => {
       
       try {
         console.log('📥 Emitting join-draft event for draft:', config.id);
-        socket.emit('join-draft', { draftId: config.id });
+        socket.emit('join-draft', { draftId: config.id, user: user });
         console.log('✅ join-draft event emitted successfully');
         
         // Transition to draft view
@@ -795,6 +835,7 @@ const MainApp = () => {
       <>
         <Dashboard
           user={user}
+          socket={socket}
           onJoinDraft={handleJoinDraft}
           onCreateDraft={handleCreateDraft}
           onLogout={handleLogout}
@@ -816,6 +857,8 @@ const MainApp = () => {
           isCommissioner={isCommissioner}
           participants={participants}
           socket={socket}
+          teamAssignments={teamAssignments}
+          setTeamAssignments={setTeamAssignments}
           onStartDraft={handleStartDraft}
           onReturnToDashboard={handleReturnToDashboard}
           onAdminAutoDraft={user?.isAdmin ? handleAdminAutoDraft : null}
@@ -884,6 +927,7 @@ const MainApp = () => {
           draftState={draftState}
           isCommissioner={isCommissioner}
           user={user}
+          teamAssignments={teamAssignments}
           onReturnToDashboard={handleReturnToDashboard}
           onReturnToLobby={handleReturnToLobby}
           onForceCompleteDraft={handleForceCompleteDraft}

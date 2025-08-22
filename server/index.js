@@ -177,8 +177,17 @@ function loadAllPlayers() {
       allPlayers.push(...players);
     }
     
-    // Sort by rank
-    return allPlayers.sort((a, b) => a.rank - b.rank);
+    // Sort by rank and add IDs based on rank
+    const sortedPlayers = allPlayers.sort((a, b) => a.rank - b.rank);
+    
+    // Add ID field to each player using their rank
+    sortedPlayers.forEach(player => {
+      if (!player.id) {
+        player.id = `player-${player.rank}`;
+      }
+    });
+    
+    return sortedPlayers;
   } catch (error) {
     console.error('Error loading player data:', error);
     return [];
@@ -203,9 +212,106 @@ const draftTimers = new Map(); // Map of draftId -> timer info
 const draftTeamAssignments = new Map(); // Map of draftId -> team assignments
 const draftResultsStorage = new Map(); // Map of draftId -> stored draft results for print
 
+// Persistent draft storage
+const DRAFTS_FILE = path.join(__dirname, 'data', 'drafts.json');
+
+// Ensure data directory exists
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+  console.log('📁 Created data directory');
+}
+
+// Load drafts from file on server start
+function loadDraftsFromFile() {
+  try {
+    if (fs.existsSync(DRAFTS_FILE)) {
+      const data = fs.readFileSync(DRAFTS_FILE, 'utf8');
+      const savedDrafts = JSON.parse(data);
+      
+      savedDrafts.forEach(draft => {
+        // Set status to scheduled if draft was in_progress (server restart scenario)
+        if (draft.status === 'in_progress' || draft.isDraftStarted) {
+          draft.status = 'scheduled';
+          draft.isDraftStarted = false;
+        }
+        activeDrafts.set(draft.id, draft);
+      });
+      console.log(`📋 Loaded ${savedDrafts.length} drafts from file`);
+    }
+  } catch (error) {
+    console.error('Error loading drafts:', error);
+  }
+}
+
+// Save drafts to file
+function saveDraftsToFile() {
+  try {
+    const drafts = Array.from(activeDrafts.values())
+      .filter(draft => draft.status !== 'completed') // Don't save completed drafts
+      .map(draft => ({
+        ...draft,
+        // Clear runtime-only data
+        availablePlayers: draft.availablePlayers || [],
+        draftedPlayers: draft.draftedPlayers || [],
+        adminIntervals: undefined // Don't persist intervals
+      }));
+    
+    fs.writeFileSync(DRAFTS_FILE, JSON.stringify(drafts, null, 2));
+    console.log(`💾 Saved ${drafts.length} drafts to file`);
+  } catch (error) {
+    console.error('Error saving drafts:', error);
+  }
+}
+
 // Utility functions
 function generateId() {
   return Math.random().toString(36).substr(2, 9);
+}
+
+// Draft permission validation function
+function validateDraftPermissions(user, draftState) {
+  try {
+    // Admins can always join any draft
+    if (user.isAdmin) {
+      return { allowed: true, reason: 'Admin access' };
+    }
+    
+    // Commissioner (draft creator) can always join their own draft
+    if (draftState.createdBy === user.id || draftState.createdBy === user.username) {
+      return { allowed: true, reason: 'Draft commissioner' };
+    }
+    
+    // Check if user is specifically invited to a team
+    if (draftState.teams && Array.isArray(draftState.teams)) {
+      for (const team of draftState.teams) {
+        if (team.email && team.email.toLowerCase() === user.email?.toLowerCase()) {
+          return { allowed: true, reason: 'Invited to specific team' };
+        }
+      }
+    }
+    
+    // Check if draft has invitation restrictions
+    const hasInvitations = draftState.teams && draftState.teams.some(team => team.email && team.email.trim() !== '');
+    
+    if (!hasInvitations) {
+      // No specific invitations, this is an open draft - anyone can join
+      return { allowed: true, reason: 'Open draft' };
+    } else {
+      // Draft has specific invitations, but user is not invited
+      return { 
+        allowed: false, 
+        reason: 'This is a private draft. You must be invited to join.' 
+      };
+    }
+    
+  } catch (error) {
+    console.error('Error validating draft permissions:', error);
+    return { 
+      allowed: false, 
+      reason: 'Permission validation error. Please try again.' 
+    };
+  }
 }
 
 function createDraftState(draftConfig) {
@@ -393,7 +499,7 @@ function canDraftPosition(team, position) {
   return currentCount < POSITION_CAPS[position];
 }
 
-function autoDraftPlayer(draftId) {
+function autoDraftPlayer(draftId, forceAutoPick = false) {
   try {
     const draftState = activeDrafts.get(draftId);
     if (!draftState || !draftState.isDraftStarted || draftState.currentPick >= draftState.draftOrder.length) {
@@ -405,6 +511,27 @@ function autoDraftPlayer(draftId) {
     if (!currentTeam) {
       console.log('⚠️ Auto-draft cancelled - no current team:', draftId);
       return false;
+    }
+
+    // 🔒 SECURITY: Prevent unauthorized auto-draft
+    // Only allow auto-draft in these specific cases:
+    if (!forceAutoPick) {
+      // Case 1: Team is explicitly absent and has auto-pick enabled
+      const teamAbsent = currentTeam.autoPickEnabled && currentTeam.isExplicitlyAbsent;
+      
+      // Case 2: Admin auto-draft is active (check for admin intervals)
+      const adminAutoDraftActive = draftState.adminIntervals && draftState.adminIntervals.length > 0;
+      
+      if (!teamAbsent && !adminAutoDraftActive) {
+        console.log('🔒 SECURITY: Auto-draft blocked - team not absent and admin auto-draft not active');
+        console.log('🔍 Team status:', {
+          teamName: currentTeam.name,
+          autoPickEnabled: currentTeam.autoPickEnabled,
+          isExplicitlyAbsent: currentTeam.isExplicitlyAbsent,
+          adminAutoDraftActive: adminAutoDraftActive
+        });
+        return false;
+      }
     }
 
     // Prevent multiple simultaneous auto-picks for the same team
@@ -800,7 +927,7 @@ function adminAutoDraft(draftId, interval = 1000) {
         }
         
         console.log(`🔧 Admin auto-draft pick ${currentDraftState.currentPick + 1} for ${draftId}`);
-        autoDraftPlayer(draftId);
+        autoDraftPlayer(draftId, true); // Force auto-pick for admin override
       } catch (innerError) {
         console.error('💥 Error in admin auto-draft interval:', innerError);
         clearInterval(autoDraftInterval);
@@ -856,9 +983,9 @@ io.on('connection', (socket) => {
     console.log(`${username} joined draft ${draftId} as ${role}`);
   });
 
-  // Join draft (get current draft state)
+  // Join draft (get current draft state) with permission validation
   socket.on('join-draft', (data) => {
-    const { draftId } = data;
+    const { draftId, user } = data;
     
     if (!draftId) {
       console.log('⚠️ No draftId provided for join-draft request');
@@ -866,10 +993,13 @@ io.on('connection', (socket) => {
       return;
     }
     
-    console.log(`📥 Join draft request for draft ${draftId}`);
+    if (!user) {
+      console.log('⚠️ No user information provided for join-draft request');
+      socket.emit('draft-error', { message: 'User information required' });
+      return;
+    }
     
-    // Join the draft room
-    socket.join(`draft-${draftId}`);
+    console.log(`📥 Join draft request for draft ${draftId} from user ${user.username || user.id}`);
     
     // Get the current draft state
     const draftState = activeDrafts.get(draftId);
@@ -879,6 +1009,21 @@ io.on('connection', (socket) => {
       socket.emit('draft-error', { message: 'Draft not found' });
       return;
     }
+    
+    // Server-side permission validation
+    const canJoin = validateDraftPermissions(user, draftState);
+    if (!canJoin.allowed) {
+      console.log(`🚫 User ${user.username || user.id} denied access to draft ${draftId}: ${canJoin.reason}`);
+      socket.emit('draft-error', { 
+        message: canJoin.reason || 'You do not have permission to join this draft'
+      });
+      return;
+    }
+    
+    console.log(`✅ User ${user.username || user.id} authorized to join draft ${draftId}`);
+    
+    // Join the draft room
+    socket.join(`draft-${draftId}`);
     
     console.log(`✅ Sending draft state for draft ${draftId}`);
     
@@ -945,6 +1090,67 @@ io.on('connection', (socket) => {
   });
 
   // Enhanced team assignment (Commissioner only)
+  // Bulk team assignment for commissioner efficiency
+  socket.on('bulk-assign-teams', (data) => {
+    const { draftId, assignments, assignedBy } = data;
+    
+    if (!draftId || !assignments || !Array.isArray(assignments)) {
+      console.log('⚠️ Invalid bulk assignment data');
+      socket.emit('team-assignment-error', { message: 'Invalid bulk assignment data' });
+      return;
+    }
+
+    // Initialize team assignments if they don't exist
+    if (!draftTeamAssignments.has(draftId)) {
+      const draftState = activeDrafts.get(draftId);
+      if (draftState) {
+        const defaultAssignments = draftState.teams.map((team, index) => ({
+          teamId: index + 1,
+          teamName: team.name,
+          assignedUser: null,
+          assignedBy: null,
+          assignedAt: null,
+          isPreAssigned: false,
+          isLocked: false
+        }));
+        draftTeamAssignments.set(draftId, defaultAssignments);
+      }
+    }
+
+    const currentAssignments = draftTeamAssignments.get(draftId);
+    if (!currentAssignments) {
+      socket.emit('team-assignment-error', { message: 'Draft not found' });
+      return;
+    }
+
+    // Apply bulk assignments
+    let updated = false;
+    assignments.forEach(({ teamId, assignedUser }) => {
+      const teamIndex = currentAssignments.findIndex(t => t.teamId === teamId);
+      if (teamIndex !== -1) {
+        currentAssignments[teamIndex].assignedUser = assignedUser;
+        currentAssignments[teamIndex].assignedBy = assignedBy;
+        currentAssignments[teamIndex].assignedAt = new Date().toISOString();
+        currentAssignments[teamIndex].isPreAssigned = assignedUser !== null && assignedUser !== 'LOCAL';
+        currentAssignments[teamIndex].isLocked = currentAssignments[teamIndex].isPreAssigned;
+        updated = true;
+      }
+    });
+
+    if (updated) {
+      console.log(`📋 Bulk team assignments updated for draft ${draftId} by ${assignedBy}`);
+      
+      // Broadcast to all clients in this draft
+      io.to(`draft-${draftId}`).emit('team-assignments-updated', {
+        draftId,
+        assignments: currentAssignments
+      });
+      
+      // Save to persistent storage
+      saveDraftsToFile();
+    }
+  });
+
   socket.on('assign-team', (data) => {
     const { draftId, teamId, assignedUser, assignedBy } = data;
     
@@ -1109,11 +1315,31 @@ io.on('connection', (socket) => {
       // Store in active drafts
       activeDrafts.set(draftConfig.id, draftState);
       
+      // Save drafts to persistent storage
+      saveDraftsToFile();
+      
       console.log(`✅ Draft created with ID: ${draftConfig.id}`);
       console.log(`📊 Active drafts count: ${activeDrafts.size}`);
       console.log(`📊 Active drafts keys: [${Array.from(activeDrafts.keys()).join(', ')}]`);
       
-      // Broadcast draft created event
+      // Broadcast draft created event to everyone (not just the draft room)
+      io.emit('draft-created', {
+        draftId: draftConfig.id,
+        draftInfo: {
+          id: draftConfig.id,
+          leagueName: draftState.leagueName,
+          createdBy: draftState.createdBy,
+          status: draftState.status || 'scheduled',
+          leagueSize: draftState.teams.length,
+          totalRounds: draftState.totalRounds,
+          timeClock: draftState.timeClock,
+          draftType: draftState.draftType,
+          createdAt: draftState.createdAt,
+          participants: []
+        }
+      });
+      
+      // Also send to the draft room for immediate feedback
       io.to(`draft-${draftConfig.id}`).emit('draft-created', {
         draftId: draftConfig.id,
         draftState: draftState
@@ -1362,14 +1588,14 @@ io.on('connection', (socket) => {
   // Draft player
   socket.on('draft-player', (data) => {
     try {
-      const { draftId, playerId } = data;
+      const { draftId, playerId, username } = data;
       if (!draftId || !playerId) {
         console.log('⚠️ Missing draftId or playerId for draft-player request');
         socket.emit('draft-error', { message: 'Missing required data' });
         return;
       }
 
-      console.log(`📥 Draft player request: ${playerId} for draft ${draftId}`);
+      console.log(`📥 Draft player request: ${playerId} for draft ${draftId} by user: ${username || 'unknown'}`);
       
       // Additional validation
       const draftState = activeDrafts.get(draftId);
@@ -1384,6 +1610,64 @@ io.on('connection', (socket) => {
         socket.emit('draft-error', { message: 'Draft is already complete' });
         return;
       }
+
+      // NEW: Permission validation - check if it's this user's turn
+      const currentTeam = getCurrentTeam(draftState);
+      if (!currentTeam) {
+        console.log('⚠️ No current team found for draft:', draftId);
+        socket.emit('draft-error', { message: 'Draft state error' });
+        return;
+      }
+
+      // Get team assignments to check which user controls which team
+      const teamAssignments = draftTeamAssignments.get(draftId) || [];
+      const currentTeamAssignment = teamAssignments.find(a => a.teamId === currentTeam.id);
+      
+      // DEBUG: If no username provided, investigate the source
+      if (!username) {
+        console.log('🚫 BLOCKING DRAFT - No username provided in request');
+        console.log('🔍 Socket details:', {
+          socketId: socket.id,
+          rooms: Array.from(socket.rooms),
+          handshake: socket.handshake?.headers?.origin || 'unknown',
+          transport: socket.conn?.transport?.name || 'unknown'
+        });
+        console.log('🔍 Request data:', data);
+        socket.emit('draft-error', { 
+          message: 'Username is required for draft requests. Please refresh and try again.' 
+        });
+        return;
+      }
+      
+      // Allow draft if:
+      // 1. User is assigned to the current team
+      // 2. Commissioner can draft for any team (fallback)
+      // 3. No specific assignment exists (open draft)
+      const userCanDraft = 
+        currentTeamAssignment?.assignedUser === socket.id ||  // User assigned to current team
+        currentTeamAssignment?.assignedUser === username ||   // User assigned by username
+        draftState.createdBy === username ||                  // Commissioner override
+        !currentTeamAssignment?.assignedUser;                 // No assignment (open draft)
+      
+      if (!userCanDraft) {
+        console.log('🚫 Permission denied - User cannot draft for current team:', {
+          currentTeam: currentTeam.name,
+          currentTeamId: currentTeam.id,
+          requestingUser: username,
+          assignedUser: currentTeamAssignment?.assignedUser,
+          isCommissioner: draftState.createdBy === username
+        });
+        socket.emit('draft-error', { 
+          message: `It's ${currentTeam.name}'s turn to draft. You can only draft when it's your team's turn.` 
+        });
+        return;
+      }
+
+      console.log('✅ Permission granted - User can draft for current team:', {
+        currentTeam: currentTeam.name,
+        requestingUser: username,
+        assignedUser: currentTeamAssignment?.assignedUser
+      });
 
       const success = draftPlayer(draftId, playerId, false);
       if (!success) {
@@ -1600,8 +1884,19 @@ io.on('connection', (socket) => {
       const player = lastPick.player;
       const team = lastPick.team;
 
-      // Return player to available pool
-      draftState.availablePlayers.push(player);
+      // Return player to available pool - insert at correct rank position
+      const insertIndex = draftState.availablePlayers.findIndex(p => p.rank > player.rank);
+      if (insertIndex === -1) {
+        // Player should go at the end (highest rank)
+        draftState.availablePlayers.push(player);
+      } else {
+        // Insert at the correct position
+        draftState.availablePlayers.splice(insertIndex, 0, player);
+      }
+      
+      // Ensure proper sorting by rank
+      draftState.availablePlayers.sort((a, b) => a.rank - b.rank);
+      
       draftState.draftedPlayers = draftState.draftedPlayers.filter(p => p.rank !== player.rank);
 
       // Remove from team roster
@@ -1698,9 +1993,9 @@ io.on('connection', (socket) => {
     console.log(`✅ Draft ${draftId} force completed successfully`);
   });
 
-  // Enhanced direct join validation for streamlined remote joining
+  // Enhanced direct join validation for streamlined remote joining with permission check
   socket.on('validate-direct-join', (data) => {
-    const { draftId, teamId } = data;
+    const { draftId, teamId, user } = data;
     
     try {
       const assignments = draftTeamAssignments.get(draftId);
@@ -1714,6 +2009,20 @@ io.on('connection', (socket) => {
         return;
       }
 
+      // Find the specific team being requested
+      const requestedTeam = draftState.teams?.find(team => team.id === teamId);
+      
+      // For direct join, we validate against the specific team's email invitation
+      if (user && requestedTeam && requestedTeam.email) {
+        if (requestedTeam.email.toLowerCase() !== user.email?.toLowerCase()) {
+          socket.emit('direct-join-validation', {
+            success: false,
+            message: 'This team invitation is for a different email address. Please use the correct email or join through the main lobby.'
+          });
+          return;
+        }
+      }
+
       const teamAssignment = assignments?.find(a => a.teamId === teamId);
       
       socket.emit('direct-join-validation', {
@@ -1721,9 +2030,10 @@ io.on('connection', (socket) => {
         message: 'Team available for direct join',
         teamInfo: {
           teamId: teamId,
-          teamName: teamAssignment?.teamName || `Team ${teamId}`,
+          teamName: teamAssignment?.teamName || requestedTeam?.name || `Team ${teamId}`,
           isPreAssigned: teamAssignment?.isPreAssigned || false,
-          assignedUser: teamAssignment?.assignedUser
+          assignedUser: teamAssignment?.assignedUser,
+          invitedEmail: requestedTeam?.email
         }
       });
 
@@ -1886,7 +2196,7 @@ app.get('/api/drafts', (req, res) => {
     activeDrafts.forEach((draftState, draftId) => {
       console.log(`🔍 Debug: Processing draft ${draftId}:`, {
         leagueName: draftState.leagueName,
-        commissionerName: draftState.commissionerName,
+        createdBy: draftState.createdBy,
         status: draftState.status,
         teamsLength: draftState.teams?.length
       });
@@ -1895,7 +2205,7 @@ app.get('/api/drafts', (req, res) => {
       const draftInfo = {
         id: draftId,
         leagueName: draftState.leagueName || `Draft ${draftId}`,
-        createdBy: draftState.commissionerName || 'Commissioner',
+        createdBy: draftState.createdBy || 'Commissioner',
         status: draftState.status || (draftState.isDraftStarted ? 'in_progress' : 'scheduled'),
         leagueSize: draftState.teams?.length || 0,
         totalRounds: draftState.totalRounds || 16,
@@ -1905,7 +2215,10 @@ app.get('/api/drafts', (req, res) => {
         createdAt: draftState.createdAt || new Date().toISOString(),
         isComplete: draftState.isComplete || false,
         currentPick: draftState.currentPick || 1,
-        totalPicks: draftState.draftOrder?.length || 0
+        totalPicks: draftState.draftOrder?.length || 0,
+        // Add additional fields that the client expects
+        teamNames: draftState.teams?.map(t => t.name) || [],
+        invitedEmails: draftState.teams?.map(t => t.email) || []
       };
       
       availableDrafts.push(draftInfo);
@@ -2067,6 +2380,9 @@ app.get('/join/:draftId/team/:teamId', (req, res) => {
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   
+  // Load existing drafts from file
+  loadDraftsFromFile();
+  
   // Memory monitoring
   setInterval(() => {
     const memUsage = process.memoryUsage();
@@ -2092,4 +2408,9 @@ server.listen(PORT, () => {
       console.log(`🧹 Cleaned up ${cleanedCount} expired draft results`);
     }
   }, 60 * 60 * 1000); // Clean up every hour
+
+  // Periodic draft state backup
+  setInterval(() => {
+    saveDraftsToFile();
+  }, 5 * 60 * 1000); // Save every 5 minutes
 });

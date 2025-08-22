@@ -112,7 +112,15 @@ const Header = ({ socket, draftState, onReturnToDashboard, onReturnToLobby, onFo
               </h1>
               {draftState?.leagueName && (
                 <p className="text-xs text-gray-400 hidden sm:block">
-                  {draftState.leagueSize} teams • {draftState.draftType === 'snake' ? 'Snake' : 'Linear'} draft • {draftState.totalRounds || 16} rounds
+                  {(() => {
+                    console.log('🔍 Draft type debug:', {
+                      draftType: draftState.draftType,
+                      typeofDraftType: typeof draftState.draftType,
+                      isSnake: draftState.draftType === 'snake',
+                      displayText: draftState.draftType === 'snake' ? 'Snake' : 'Linear'
+                    });
+                    return `${draftState.leagueSize} teams • ${draftState.draftType === 'snake' ? 'Snake' : 'Linear'} draft • ${draftState.totalRounds || 16} rounds`;
+                  })()}
                 </p>
               )}
             </div>

@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import CreateDraftModal from './CreateDraftModal';
+import DraftInviteModal from './DraftInviteModal';
 import { formatTimeDisplay } from '../utils/timeUtils';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
 
-const Dashboard = ({ user, onJoinDraft, onCreateDraft, onLogout }) => {
+const Dashboard = ({ user, socket, onJoinDraft, onCreateDraft, onLogout }) => {
   const [drafts, setDrafts] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [selectedDraftForInvite, setSelectedDraftForInvite] = useState(null);
   const [isLoadingDrafts, setIsLoadingDrafts] = useState(true);
   const [loadError, setLoadError] = useState(null);
 
@@ -59,6 +62,37 @@ const Dashboard = ({ user, onJoinDraft, onCreateDraft, onLogout }) => {
     return () => clearInterval(interval);
   }, []);
 
+  // Listen for real-time draft creation events
+  useEffect(() => {
+    const handleDraftCreated = (data) => {
+      console.log('📢 Received draft-created event:', data);
+      
+      if (data.draftInfo) {
+        setDrafts(prevDrafts => {
+          // Check if draft already exists
+          const exists = prevDrafts.find(d => d.id === data.draftInfo.id);
+          if (exists) {
+            return prevDrafts;
+          }
+          
+          // Add new draft to the list
+          return [...prevDrafts, data.draftInfo];
+        });
+      }
+    };
+
+    // Check if socket exists and add listener
+    if (socket) {
+      socket.on('draft-created', handleDraftCreated);
+      console.log('👂 Listening for draft-created events');
+      
+      // Cleanup listener on unmount
+      return () => {
+        socket.off('draft-created', handleDraftCreated);
+      };
+    }
+  }, [socket]);
+
   const handleCreateDraft = (draftConfig) => {
     console.log('📝 Dashboard.handleCreateDraft called with:', draftConfig);
     
@@ -89,6 +123,11 @@ const Dashboard = ({ user, onJoinDraft, onCreateDraft, onLogout }) => {
     if (draft) {
       onJoinDraft(draft);
     }
+  };
+
+  const handleInviteDraft = (draft) => {
+    setSelectedDraftForInvite(draft);
+    setShowInviteModal(true);
   };
 
   const handleDeleteDraft = (draftId, draftName) => {
@@ -294,6 +333,17 @@ const Dashboard = ({ user, onJoinDraft, onCreateDraft, onLogout }) => {
                     </div>
                     
                     <div className="flex items-center space-x-2">
+                      {/* Invite button for commissioners */}
+                      {draft.createdBy === user.id && draft.status !== 'completed' && (
+                        <button
+                          onClick={() => handleInviteDraft(draft)}
+                          className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-3 rounded-md text-sm transition-colors duration-200"
+                          title="Invite participants"
+                        >
+                          📨
+                        </button>
+                      )}
+                      
                       {canJoinDraft(draft) && (
                         <>
                           {draft.status === 'scheduled' && (
@@ -358,6 +408,17 @@ const Dashboard = ({ user, onJoinDraft, onCreateDraft, onLogout }) => {
           onCreateDraft={handleCreateDraft}
         />
       )}
+
+      {/* Draft Invitation Modal */}
+      <DraftInviteModal
+        isOpen={showInviteModal}
+        onClose={() => {
+          setShowInviteModal(false);
+          setSelectedDraftForInvite(null);
+        }}
+        draft={selectedDraftForInvite}
+        user={user}
+      />
     </div>
   );
 };
