@@ -655,6 +655,25 @@ const DraftLobby = ({
                 🔧 Debug Completion
               </button>
             )}
+            {/* Return to Draft Button - Show when draft is in progress */}
+            {(draftState?.status === 'in_progress' || draftState?.isDraftStarted) && !draftState?.isComplete && (
+              <button
+                onClick={() => {
+                  console.log('🏈 Returning to active draft:', currentDraft?.id);
+                  onStartDraft(currentDraft);
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center space-x-2"
+                title="Rejoin the active draft"
+              >
+                <span>🏈</span>
+                <span>Return to Draft</span>
+                {draftState?.currentPick && draftState?.draftOrder && (
+                  <span className="bg-green-700 px-2 py-1 rounded text-xs">
+                    Pick {draftState.currentPick}/{draftState.draftOrder.length}
+                  </span>
+                )}
+              </button>
+            )}
             {(draftState?.isComplete || draftState?.status === 'completed') && (
               <button
                 onClick={handleOpenDraftBoard}
@@ -699,6 +718,64 @@ const DraftLobby = ({
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Return to Draft Banner - Show when draft is in progress */}
+      {(draftState?.status === 'in_progress' || draftState?.isDraftStarted) && !draftState?.isComplete && (
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="bg-blue-800 border border-blue-600 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="text-blue-400 text-2xl">🏈</div>
+                <div>
+                  <h2 className="text-white font-semibold text-lg">Draft in Progress!</h2>
+                  <p className="text-blue-200 text-sm">
+                    {(() => {
+                      const currentPickIndex = (draftState?.currentPick || 1) - 1;
+                      const totalPicks = draftState?.draftOrder?.length || 0;
+                      const currentTeam = draftState?.draftOrder?.[currentPickIndex];
+                      const currentTeamName = currentTeam ? draftState?.teams?.find(t => t.id === currentTeam.teamId)?.name || `Team ${currentTeam.teamId}` : 'Unknown Team';
+                      const completionPercentage = totalPicks > 0 ? Math.round(((draftState?.currentPick || 1) - 1) / totalPicks * 100) : 0;
+                      
+                      return `Pick ${draftState?.currentPick || 1} of ${totalPicks} - ${currentTeamName} is on the clock (${completionPercentage}% complete)`;
+                    })()}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    console.log('🏈 Returning to active draft from banner:', currentDraft?.id);
+                    onStartDraft(currentDraft);
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center space-x-2"
+                  title="Rejoin the active draft"
+                >
+                  <span>🏈</span>
+                  <span>Return to Draft</span>
+                </button>
+              </div>
+            </div>
+            
+            {/* Progress Bar */}
+            {draftState?.currentPick && draftState?.draftOrder && (
+              <div className="mt-4">
+                <div className="flex justify-between text-xs text-blue-300 mb-1">
+                  <span>Draft Progress</span>
+                  <span>{Math.round(((draftState?.currentPick || 1) - 1) / (draftState?.draftOrder?.length || 1) * 100)}%</span>
+                </div>
+                <div className="w-full bg-blue-700 rounded-full h-3">
+                  <div 
+                    className="bg-green-500 h-3 rounded-full transition-all duration-300"
+                    style={{
+                      width: `${Math.round(((draftState?.currentPick || 1) - 1) / (draftState?.draftOrder?.length || 1) * 100)}%`
+                    }}
+                  ></div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1321,6 +1398,11 @@ const DraftLobby = ({
             <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
               <h2 className="text-lg font-semibold text-white mb-4">
                 Participants ({participants.length})
+                {(draftState?.status === 'in_progress' || draftState?.isDraftStarted) && !draftState?.isComplete && (
+                  <span className="ml-2 text-sm text-blue-400">
+                    • Draft Active
+                  </span>
+                )}
               </h2>
               <div className="space-y-3">
                 {participants.map((participant, index) => (
@@ -1330,6 +1412,12 @@ const DraftLobby = ({
                       <span className="text-white font-medium">{participant.username}</span>
                       {participant.role === 'commissioner' && (
                         <span className="text-yellow-400 text-xs">👑</span>
+                      )}
+                      {/* Show if participant is in the draft */}
+                      {(draftState?.status === 'in_progress' || draftState?.isDraftStarted) && !draftState?.isComplete && (
+                        <span className="text-blue-400 text-xs bg-blue-600 px-2 py-1 rounded">
+                          🏈 In Draft
+                        </span>
                       )}
                     </div>
                     <span className={`text-xs px-2 py-1 rounded ${
