@@ -486,7 +486,8 @@ const DraftLobby = ({
       socket.emit('assign-team', {
         draftId: currentDraft?.id,
         teamId: teamIndex + 1,
-        assignedUser: userId,
+        assignedUser: userId, // username for display
+        assignedUserId: user.id, // userId for persistence
         assignedBy: user.username
       });
     }
@@ -497,7 +498,8 @@ const DraftLobby = ({
       socket.emit('claim-team', {
         draftId: currentDraft?.id,
         teamId: teamIndex + 1,
-        userId: user.username,
+        userId: user.id, // Use user ID for persistence
+        username: user.username, // Include username for display
         claimedBy: user.username
       });
     }
@@ -1182,6 +1184,43 @@ const DraftLobby = ({
                       </div>
                     );
                   })()}
+
+                  {/* Team Selection Interface for Participants */}
+                  {!isCommissioner && !teamAssignments.find(t => t.assignedUser === user.username) && (
+                    <div className="mt-6 p-4 bg-gray-800 border border-gray-700 rounded">
+                      <h3 className="text-lg font-medium text-white mb-3">🎯 Select Your Team</h3>
+                      <p className="text-gray-300 text-sm mb-4">
+                        Choose a team to participate in the draft. Once selected, you'll be able to rejoin the draft directly if you disconnect.
+                      </p>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {teamAssignments
+                          .filter(assignment => !assignment.assignedUser) // Only show available teams
+                          .map((assignment, index) => (
+                            <div key={index} className="p-3 bg-gray-700 border border-gray-600 rounded hover:bg-gray-600 transition-colors">
+                              <div className="text-center">
+                                <h4 className="text-white font-medium">Team {assignment.teamId}</h4>
+                                <p className="text-gray-300 text-sm mb-3">{assignment.teamName}</p>
+                                <button
+                                  onClick={() => handleClaimTeam(assignment.teamId - 1)} // Convert to 0-based index
+                                  className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
+                                >
+                                  🎯 Select This Team
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                      
+                      {teamAssignments.filter(t => !t.assignedUser).length === 0 && (
+                        <div className="text-center p-4 bg-yellow-800 border border-yellow-600 rounded">
+                          <p className="text-yellow-200 text-sm">
+                            ⚠️ No teams are currently available. Please wait for the commissioner to assign teams or contact them for assistance.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
             </div>

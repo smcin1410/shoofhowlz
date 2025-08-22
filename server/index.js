@@ -426,7 +426,8 @@ function createDraftState(draftConfig) {
       timeExtensionTokens: draftConfig.tokens || 3,
       isPresent: true, // Teams are present by default
       isExplicitlyAbsent: false, // Track explicit absence
-      assignedParticipant: null,
+      assignedParticipant: null, // Will store userId for persistent assignment
+      assignedUsername: null, // Store username for display
       autoPickEnabled: false // Auto-pick disabled by default
     })),
     draftOrder: [],
@@ -1318,6 +1319,70 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Check if user has an assigned team and can rejoin directly
+  socket.on('check-team-assignment', (data) => {
+    const { draftId, userId, username } = data;
+    
+    if (!draftId || !userId) {
+      socket.emit('team-assignment-check', { hasAssignment: false });
+      return;
+    }
+    
+    console.log(`🔍 Checking team assignment for user ${username} (${userId}) in draft ${draftId}`);
+    
+    const draftState = activeDrafts.get(draftId);
+    if (!draftState) {
+      socket.emit('team-assignment-check', { hasAssignment: false, error: 'Draft not found' });
+      return;
+    }
+    
+    // Check if user has an assigned team
+    const assignedTeam = draftState.teams.find(team => 
+      team.assignedParticipant === userId || team.assignedUsername === username
+    );
+    
+    if (assignedTeam) {
+      console.log(`✅ User ${username} has assigned team: ${assignedTeam.name} (Team ${assignedTeam.id})`);
+      
+      // Save user session for reconnection
+      saveUserDraftSession(userId, draftId, username, {
+        teamId: assignedTeam.id,
+        teamName: assignedTeam.name
+      });
+      
+      // Track socket to user mapping
+      socketUserMap.set(socket.id, userId);
+      
+      // Join the draft room
+      socket.join(`draft-${draftId}`);
+      
+      // Send the current draft state
+      socket.emit('draft-state', draftState);
+      
+      // Send participants and team assignments
+      const participants = draftParticipants.get(draftId);
+      if (participants) {
+        const participantsList = Array.from(participants.values());
+        socket.emit('participants-update', participantsList);
+      }
+      
+      const assignments = draftTeamAssignments.get(draftId);
+      if (assignments) {
+        socket.emit('team-assignments-update', assignments);
+      }
+      
+      socket.emit('team-assignment-check', {
+        hasAssignment: true,
+        teamId: assignedTeam.id,
+        teamName: assignedTeam.name,
+        message: `Welcome back! You're assigned to ${assignedTeam.name}`
+      });
+    } else {
+      console.log(`❌ User ${username} has no assigned team in draft ${draftId}`);
+      socket.emit('team-assignment-check', { hasAssignment: false });
+    }
+  });
+
   // Handle chat messages
   socket.on('lobby-chat-message', (data) => {
     const { draftId, username, message, isCommissioner } = data;
@@ -1426,7 +1491,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('assign-team', (data) => {
-    const { draftId, teamId, assignedUser, assignedBy } = data;
+    const { draftId, teamId, assignedUser, assignedBy, assignedUserId } = data;
     
     // Initialize team assignments if they don't exist
     if (!draftTeamAssignments.has(draftId)) {
@@ -1435,7 +1500,8 @@ io.on('connection', (socket) => {
         const assignments = draftState.teams.map((team, index) => ({
           teamId: index + 1,
           teamName: team.name,
-          assignedUser: null,
+          assignedUser: null, // username for display
+          assignedUserId: null, // userId for persistent assignment
           assignedBy: null,
           assignedAt: null,
           isPreAssigned: false,
@@ -1449,24 +1515,35 @@ io.on('connection', (socket) => {
     if (assignments) {
       const teamIndex = assignments.findIndex(t => t.teamId === teamId);
       if (teamIndex !== -1) {
-        // Enhanced assignment tracking
-        assignments[teamIndex].assignedUser = assignedUser;
+        // Enhanced assignment tracking with both username and userId
+        assignments[teamIndex].assignedUser = assignedUser; // username
+        assignments[teamIndex].assignedUserId = assignedUserId; // userId for persistence
         assignments[teamIndex].assignedBy = assignedBy;
         assignments[teamIndex].assignedAt = new Date().toISOString();
         assignments[teamIndex].isPreAssigned = assignedUser !== null && assignedUser !== 'LOCAL';
         assignments[teamIndex].isLocked = assignments[teamIndex].isPreAssigned;
         
+        // Update the draft state team assignment for persistence
+        const draftState = activeDrafts.get(draftId);
+        if (draftState && draftState.teams) {
+          const team = draftState.teams.find(t => t.id === teamId);
+          if (team) {
+            team.assignedParticipant = assignedUserId; // Store userId for persistence
+            team.assignedUsername = assignedUser; // Store username for display
+          }
+        }
+        
         // Broadcast updated assignments
         io.to(`draft-${draftId}`).emit('team-assignments-update', assignments);
         
         const actionType = assignedUser ? 'assigned' : 'released';
-        console.log(`Enhanced Pre-Assignment: Team ${teamId} ${actionType} ${assignedUser ? `to ${assignedUser}` : ''} by ${assignedBy} at ${assignments[teamIndex].assignedAt}`);
+        console.log(`Enhanced Pre-Assignment: Team ${teamId} ${actionType} ${assignedUser ? `to ${assignedUser} (${assignedUserId})` : ''} by ${assignedBy} at ${assignments[teamIndex].assignedAt}`);
         
         // Auto-assignment notification if participant is connected
         if (assignedUser && assignedUser !== 'LOCAL') {
           const participants = draftParticipants.get(draftId);
           if (participants) {
-            const participant = Array.from(participants.values()).find(p => p.username === assignedUser || p.id === assignedUser);
+            const participant = Array.from(participants.values()).find(p => p.username === assignedUser || p.id === assignedUser || p.id === assignedUserId);
             if (participant) {
               io.to(participant.socketId).emit('team-pre-assigned', {
                 teamId,
@@ -1483,7 +1560,7 @@ io.on('connection', (socket) => {
 
   // Claim team (Participant)
   socket.on('claim-team', (data) => {
-    const { draftId, teamId, userId, claimedBy } = data;
+    const { draftId, teamId, userId, username, claimedBy } = data;
     
     // Initialize team assignments if they don't exist
     if (!draftTeamAssignments.has(draftId)) {
@@ -1492,7 +1569,8 @@ io.on('connection', (socket) => {
         const assignments = draftState.teams.map((team, index) => ({
           teamId: index + 1,
           teamName: team.name,
-          assignedUser: null
+          assignedUser: null,
+          assignedUserId: null
         }));
         draftTeamAssignments.set(draftId, assignments);
       }
@@ -1503,7 +1581,7 @@ io.on('connection', (socket) => {
       const teamIndex = assignments.findIndex(t => t.teamId === teamId);
       
       // Check if team is available and user hasn't already claimed a team
-      const alreadyClaimed = assignments.some(t => t.assignedUser === userId);
+      const alreadyClaimed = assignments.some(t => t.assignedUserId === userId || t.assignedUser === username);
       
       // Enhanced validation with pre-assignment protection
       const teamAssignment = assignments[teamIndex];
@@ -1525,7 +1603,7 @@ io.on('connection', (socket) => {
       }
       
       // Check if team is pre-assigned to someone else
-      if (teamAssignment.isPreAssigned && teamAssignment.assignedUser !== userId) {
+      if (teamAssignment.isPreAssigned && teamAssignment.assignedUserId !== userId && teamAssignment.assignedUser !== username) {
         socket.emit('team-claim-error', {
           message: `Team ${teamId} is pre-assigned to another participant and is protected from claiming`,
           type: 'pre_assigned_protected'
@@ -1543,14 +1621,25 @@ io.on('connection', (socket) => {
       }
       
       // Allow claiming if team is unassigned or pre-assigned to this user
-      if (!teamAssignment.assignedUser || (teamAssignment.isPreAssigned && teamAssignment.assignedUser === userId)) {
-        teamAssignment.assignedUser = userId;
+      if (!teamAssignment.assignedUser || (teamAssignment.isPreAssigned && (teamAssignment.assignedUserId === userId || teamAssignment.assignedUser === username))) {
+        teamAssignment.assignedUser = username; // Store username for display
+        teamAssignment.assignedUserId = userId; // Store userId for persistence
+        
+        // Update the draft state team assignment for persistence
+        const draftState = activeDrafts.get(draftId);
+        if (draftState && draftState.teams) {
+          const team = draftState.teams.find(t => t.id === teamId);
+          if (team) {
+            team.assignedParticipant = userId; // Store userId for persistence
+            team.assignedUsername = username; // Store username for display
+          }
+        }
         
         // Broadcast updated assignments
         io.to(`draft-${draftId}`).emit('team-assignments-update', assignments);
         
         const claimType = teamAssignment.isPreAssigned ? 'Pre-assigned team claimed' : 'Team claimed';
-        console.log(`Enhanced Team Claiming: ${claimType} - Team ${teamId} by ${claimedBy} (${userId})`);
+        console.log(`Enhanced Team Claiming: ${claimType} - Team ${teamId} by ${claimedBy} (${username} - ${userId})`);
         
         // Send success confirmation
         socket.emit('team-claim-success', {

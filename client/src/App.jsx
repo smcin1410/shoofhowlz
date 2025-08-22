@@ -474,6 +474,25 @@ const MainApp = () => {
         alert(`Team Claim Error: ${error.message}`);
       });
 
+      // Team assignment check for automatic reconnection
+      newSocket.on('team-assignment-check', (data) => {
+        console.log('🔍 Team assignment check result:', data);
+        
+        if (data.hasAssignment) {
+          console.log(`✅ User has assigned team: ${data.teamName} (Team ${data.teamId})`);
+          
+          // Automatically join the draft since user has an assigned team
+          setAppView('draft');
+          setIsInLobby(false);
+          
+          // Show success message
+          alert(`🎉 ${data.message}`);
+        } else {
+          console.log('❌ User has no assigned team, staying in lobby');
+          // User will need to join lobby normally
+        }
+      });
+
       newSocket.on('draft-error', (error) => {
         console.error('❌ Draft access error:', error);
         alert(`Draft Access Error: ${error.message}`);
@@ -719,20 +738,30 @@ const MainApp = () => {
     setCurrentDraft(draft);
     setDraftConfig(draft);
     setIsCommissioner(draft.createdBy === user.id);
-    setAppView('lobby');
     
-    console.log('🏢 Switching to lobby view');
-    
-    // Join the draft room
+    // Check if user has an assigned team first
     if (socket) {
-      console.log('📡 Emitting join-lobby event');
-      socket.emit('join-lobby', {
-        username: user.username,
-        role: draft.createdBy === user.id ? 'commissioner' : 'participant',
-        draftId: draft.id
+      console.log('🔍 Checking for team assignment before joining lobby');
+      socket.emit('check-team-assignment', {
+        draftId: draft.id,
+        userId: user.id,
+        username: user.username
       });
+      
+      // Set a timeout to fall back to lobby if no assignment found
+      setTimeout(() => {
+        console.log('⏰ No team assignment found, joining lobby');
+        setAppView('lobby');
+        
+        socket.emit('join-lobby', {
+          username: user.username,
+          role: draft.createdBy === user.id ? 'commissioner' : 'participant',
+          draftId: draft.id
+        });
+      }, 2000); // Wait 2 seconds for team assignment check
     } else {
-      console.error('❌ Socket not available when joining lobby');
+      console.error('❌ Socket not available when joining draft');
+      setAppView('lobby');
     }
   };
 
