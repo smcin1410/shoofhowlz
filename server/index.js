@@ -1865,6 +1865,43 @@ app.get('/api/players', (req, res) => {
   }
 });
 
+// Get all available drafts
+app.get('/api/drafts', (req, res) => {
+  try {
+    const availableDrafts = [];
+    
+    activeDrafts.forEach((draftState, draftId) => {
+      // Only include drafts that are available for joining
+      const draftInfo = {
+        id: draftId,
+        leagueName: draftState.leagueName || `Draft ${draftId}`,
+        createdBy: draftState.commissionerName || 'Commissioner',
+        status: draftState.status || (draftState.isDraftStarted ? 'in_progress' : 'scheduled'),
+        leagueSize: draftState.teams?.length || 0,
+        totalRounds: draftState.totalRounds || 16,
+        timeClock: draftState.timeClock || 90,
+        draftType: draftState.draftType || 'Snake',
+        participants: Array.from(draftParticipants.get(draftId)?.values() || []),
+        createdAt: draftState.createdAt || new Date().toISOString(),
+        isComplete: draftState.isComplete || false,
+        currentPick: draftState.currentPick || 1,
+        totalPicks: draftState.draftOrder?.length || 0
+      };
+      
+      availableDrafts.push(draftInfo);
+    });
+    
+    // Sort by creation date (newest first)
+    availableDrafts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    console.log(`📋 Serving ${availableDrafts.length} available drafts`);
+    res.json(availableDrafts);
+  } catch (error) {
+    console.error('Error serving drafts:', error);
+    res.status(500).json({ error: 'Failed to load drafts' });
+  }
+});
+
 // Draft results storage endpoints
 app.post('/api/store-draft-results', (req, res) => {
   try {

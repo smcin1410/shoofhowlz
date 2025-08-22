@@ -1,14 +1,62 @@
 import { useState, useEffect } from 'react';
 import CreateDraftModal from './CreateDraftModal';
+import { formatTimeDisplay } from '../utils/timeUtils';
+
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
 
 const Dashboard = ({ user, onJoinDraft, onCreateDraft, onLogout }) => {
   const [drafts, setDrafts] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isLoadingDrafts, setIsLoadingDrafts] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
-  // Load drafts from localStorage on component mount
+  // Load drafts from server and localStorage
   useEffect(() => {
-    const savedDrafts = JSON.parse(localStorage.getItem('drafts') || '[]');
-    setDrafts(savedDrafts);
+    const loadDrafts = async () => {
+      setIsLoadingDrafts(true);
+      setLoadError(null);
+      
+      try {
+        // First, load from localStorage (user's personal drafts)
+        const savedDrafts = JSON.parse(localStorage.getItem('drafts') || '[]');
+        
+        // Then fetch all available drafts from server
+        const response = await fetch(`${SERVER_URL}/api/drafts`);
+        if (response.ok) {
+          const serverDrafts = await response.json();
+          
+          // Combine server drafts with local drafts, avoiding duplicates
+          const combinedDrafts = [...serverDrafts];
+          
+          // Add any local drafts that aren't on the server yet
+          savedDrafts.forEach(localDraft => {
+            if (!serverDrafts.find(serverDraft => serverDraft.id === localDraft.id)) {
+              combinedDrafts.push(localDraft);
+            }
+          });
+          
+          setDrafts(combinedDrafts);
+          console.log(`📋 Loaded ${combinedDrafts.length} total drafts (${serverDrafts.length} from server, ${savedDrafts.length} from local)`);
+        } else {
+          console.warn('⚠️ Failed to fetch server drafts, using localStorage only');
+          setDrafts(savedDrafts);
+        }
+      } catch (error) {
+        console.error('❌ Error loading drafts:', error);
+        setLoadError(error.message);
+        // Fallback to localStorage
+        const savedDrafts = JSON.parse(localStorage.getItem('drafts') || '[]');
+        setDrafts(savedDrafts);
+      } finally {
+        setIsLoadingDrafts(false);
+      }
+    };
+
+    loadDrafts();
+    
+    // Refresh drafts every 30 seconds to show new drafts and status updates
+    const interval = setInterval(loadDrafts, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleCreateDraft = (draftConfig) => {
@@ -51,11 +99,32 @@ const Dashboard = ({ user, onJoinDraft, onCreateDraft, onLogout }) => {
     }
   };
 
+  const handlePrintResults = (draftId) => {
+    // Open results page in a new window/tab for printing
+    const resultsUrl = `/results?draftId=${draftId}`;
+    window.open(resultsUrl, '_blank');
+  };
+
+
+
   const canJoinDraft = (draft) => {
-    // User can join if they created it or were invited
+    // User can join if:
+    // 1. They created it
+    // 2. They were invited (via email)
+    // 3. It's an open draft (no specific invitations)
+    // 4. It's from the server (public drafts)
     return draft.createdBy === user.id || 
-           draft.invitedUsers.includes(user.email) ||
-           draft.invitedUsers.length === 0; // Open drafts
+           draft.createdBy === user.username ||
+           (draft.invitedUsers && draft.invitedUsers.includes(user.email)) ||
+           (draft.invitedUsers && draft.invitedUsers.length === 0) ||
+           !draft.invitedUsers; // Server drafts don't have invitedUsers property
+  };
+
+  const getDraftSource = (draft) => {
+    if (draft.createdBy === user.id || draft.createdBy === user.username) {
+      return 'My Draft';
+    }
+    return 'Public Draft';
   };
 
   const formatDateTime = (dateString) => {
@@ -91,12 +160,12 @@ const Dashboard = ({ user, onJoinDraft, onCreateDraft, onLogout }) => {
               <h1 className="text-2xl font-bold text-white">Fantasy Football Drafts</h1>
               <p className="text-gray-300">Welcome back, {user.username}</p>
             </div>
-            <div className="flex items-center space-x-4">
-              {user.isAdmin && (
-                <span className="bg-yellow-600 text-yellow-100 px-2 py-1 rounded text-sm font-medium">
-                  Admin
-                </span>
-              )}
+                         <div className="flex items-center space-x-4">
+               {user.isAdmin && (
+                 <span className="bg-yellow-600 text-yellow-100 px-2 py-1 rounded text-sm font-medium">
+                   Admin
+                 </span>
+               )}
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
@@ -116,7 +185,24 @@ const Dashboard = ({ user, onJoinDraft, onCreateDraft, onLogout }) => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {drafts.length === 0 ? (
+        {isLoadingDrafts ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <h2 className="text-xl text-gray-400 mb-2">Loading drafts...</h2>
+            <p className="text-gray-500">Checking for available drafts to join</p>
+          </div>
+        ) : loadError ? (
+          <div className="text-center py-12">
+            <h2 className="text-xl text-red-400 mb-4">⚠️ Error Loading Drafts</h2>
+            <p className="text-gray-500 mb-6">{loadError}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-md transition-colors duration-200"
+            >
+              🔄 Retry
+            </button>
+          </div>
+        ) : drafts.length === 0 ? (
           <div className="text-center py-12">
             <h2 className="text-xl text-gray-400 mb-4">No drafts available</h2>
             <p className="text-gray-500 mb-6">Create your first draft to get started!</p>
@@ -143,11 +229,33 @@ const Dashboard = ({ user, onJoinDraft, onCreateDraft, onLogout }) => {
                     </span>
                   </div>
 
+                  {/* Draft Source Badge */}
+                  <div className="mb-3">
+                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                      getDraftSource(draft) === 'My Draft' 
+                        ? 'bg-yellow-600 text-yellow-100' 
+                        : 'bg-blue-600 text-blue-100'
+                    }`}>
+                      {getDraftSource(draft)}
+                    </span>
+                    {draft.createdBy && getDraftSource(draft) === 'Public Draft' && (
+                      <span className="ml-2 text-xs text-gray-400">
+                        by {draft.createdBy}
+                      </span>
+                    )}
+                  </div>
+
                   <div className="space-y-2 text-sm text-gray-300 mb-4">
                     <div className="flex justify-between">
                       <span>Teams:</span>
                       <span>{draft.leagueSize}</span>
                     </div>
+                    {draft.participants && (
+                      <div className="flex justify-between">
+                        <span>Participants:</span>
+                        <span className="text-green-400">{draft.participants.length}/{draft.leagueSize}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span>Draft Type:</span>
                       <span>{draft.draftType}</span>
@@ -158,8 +266,16 @@ const Dashboard = ({ user, onJoinDraft, onCreateDraft, onLogout }) => {
                     </div>
                     <div className="flex justify-between">
                       <span>Timer:</span>
-                      <span>{draft.timeClock} min</span>
+                      <span>{formatTimeDisplay(draft.timeClock)}</span>
                     </div>
+                    {draft.status === 'in_progress' && draft.currentPick && draft.totalPicks && (
+                      <div className="flex justify-between">
+                        <span>Progress:</span>
+                        <span className="text-blue-400">
+                          Pick {draft.currentPick} of {draft.totalPicks}
+                        </span>
+                      </div>
+                    )}
                     {draft.draftDateTime && (
                       <div className="flex justify-between">
                         <span>Scheduled:</span>
@@ -179,19 +295,48 @@ const Dashboard = ({ user, onJoinDraft, onCreateDraft, onLogout }) => {
                     
                     <div className="flex items-center space-x-2">
                       {canJoinDraft(draft) && (
-                        <button
-                          onClick={() => handleJoinDraft(draft.id)}
-                          className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md text-sm transition-colors duration-200"
-                        >
-                          Join Draft
-                        </button>
+                        <>
+                          {draft.status === 'scheduled' && (
+                            <button
+                              onClick={() => handleJoinDraft(draft.id)}
+                              className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md text-sm transition-colors duration-200"
+                            >
+                              Enter Lobby
+                            </button>
+                          )}
+                          {draft.status === 'in_progress' && (
+                            <button
+                              onClick={() => handleJoinDraft(draft.id)}
+                              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md text-sm transition-colors duration-200"
+                            >
+                              Enter Lobby
+                            </button>
+                          )}
+                          {draft.status === 'completed' && (
+                            <>
+                              <button
+                                onClick={() => handleJoinDraft(draft.id)}
+                                className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md text-sm transition-colors duration-200"
+                              >
+                                Review Completed Draft
+                              </button>
+                              <button
+                                onClick={() => handlePrintResults(draft.id)}
+                                className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-3 rounded-md text-sm transition-colors duration-200"
+                                title="Print Draft Results"
+                              >
+                                🖨️
+                              </button>
+                            </>
+                          )}
+                        </>
                       )}
                       
-                      {draft.createdBy === user.id && (
+                      {(draft.createdBy === user.id || user.isAdmin) && (
                         <button
                           onClick={() => handleDeleteDraft(draft.id, draft.leagueName)}
                           className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-3 rounded-md text-sm transition-colors duration-200"
-                          title="Delete Draft"
+                          title={user.isAdmin ? "Delete Draft (Admin)" : "Delete Draft"}
                         >
                           🗑️
                         </button>
