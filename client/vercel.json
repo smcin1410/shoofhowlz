@@ -14,6 +14,22 @@
       "handle": "filesystem"
     },
     {
+      "src": "/join/(.*)",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/drafts/(.*)",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/display",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/results",
+      "dest": "/index.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }

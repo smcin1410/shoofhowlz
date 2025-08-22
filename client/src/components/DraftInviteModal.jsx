@@ -13,7 +13,21 @@ const DraftInviteModal = ({
 
   if (!isOpen || !draft) return null;
 
-  const baseUrl = window.location.origin;
+  // More robust base URL detection for production
+  const getBaseUrl = () => {
+    // Check if we're in production (Vercel)
+    if (window.location.hostname.includes('vercel.app')) {
+      return `https://${window.location.hostname}`;
+    }
+    // Check if we're in development
+    if (window.location.hostname === 'localhost') {
+      return window.location.origin;
+    }
+    // Fallback to origin
+    return window.location.origin;
+  };
+  
+  const baseUrl = getBaseUrl();
   // Generate team-specific invite links for each team with an email
   const generateTeamInviteLinks = () => {
     if (!draft.teams || !Array.isArray(draft.teams)) {
