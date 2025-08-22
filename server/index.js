@@ -2468,6 +2468,76 @@ app.get('/api/drafts', (req, res) => {
   }
 });
 
+// Delete a draft
+app.delete('/api/drafts/:draftId', (req, res) => {
+  try {
+    const { draftId } = req.params;
+    const { userId, isAdmin } = req.body; // Get user info from request body
+    
+    console.log(`🗑️ Delete draft request for draft ${draftId} by user ${userId} (admin: ${isAdmin})`);
+    
+    // Check if draft exists
+    const draftState = activeDrafts.get(draftId);
+    if (!draftState) {
+      console.log(`❌ Draft ${draftId} not found`);
+      return res.status(404).json({ error: 'Draft not found' });
+    }
+    
+    // Check permissions - only draft creator or admin can delete
+    const canDelete = isAdmin || draftState.createdBy === userId;
+    if (!canDelete) {
+      console.log(`❌ User ${userId} not authorized to delete draft ${draftId}`);
+      return res.status(403).json({ error: 'Not authorized to delete this draft' });
+    }
+    
+    // Clean up all draft resources
+    console.log(`🧹 Cleaning up resources for draft ${draftId}`);
+    
+    // Clear timers
+    const timerInfo = draftTimers.get(draftId);
+    if (timerInfo?.interval) {
+      clearInterval(timerInfo.interval);
+      draftTimers.delete(draftId);
+    }
+    
+    // Clear admin intervals
+    if (draftState.adminIntervals) {
+      draftState.adminIntervals.forEach(interval => {
+        clearInterval(interval);
+      });
+    }
+    
+    // Remove from all tracking maps
+    activeDrafts.delete(draftId);
+    draftParticipants.delete(draftId);
+    draftChatHistory.delete(draftId);
+    draftTeamAssignments.delete(draftId);
+    
+    // Clear user sessions for this draft
+    userDraftSessions.forEach((session, userId) => {
+      if (session.draftId === draftId) {
+        userDraftSessions.delete(userId);
+      }
+    });
+    
+    // Clear draft user sessions
+    draftUserSessions.delete(draftId);
+    
+    // Save updated drafts to file (this will exclude the deleted draft)
+    saveDraftsToFile();
+    
+    // Notify all connected clients about the deletion
+    io.emit('draft-deleted', { draftId, deletedBy: userId });
+    
+    console.log(`✅ Draft ${draftId} successfully deleted`);
+    res.json({ success: true, message: 'Draft deleted successfully' });
+    
+  } catch (error) {
+    console.error('❌ Error deleting draft:', error);
+    res.status(500).json({ error: 'Failed to delete draft' });
+  }
+});
+
 // Draft results storage endpoints
 app.post('/api/store-draft-results', (req, res) => {
   try {

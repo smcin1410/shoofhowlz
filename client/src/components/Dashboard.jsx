@@ -59,7 +59,7 @@ const Dashboard = ({ user, socket, onJoinDraft, onCreateDraft, onLogout, session
     return () => clearInterval(interval);
   }, []);
 
-  // Listen for real-time draft creation events
+  // Listen for real-time draft events
   useEffect(() => {
     const handleDraftCreated = (data) => {
       console.log('📢 Received draft-created event:', data);
@@ -78,14 +78,32 @@ const Dashboard = ({ user, socket, onJoinDraft, onCreateDraft, onLogout, session
       }
     };
 
-    // Check if socket exists and add listener
+    const handleDraftDeleted = (data) => {
+      console.log('🗑️ Received draft-deleted event:', data);
+      
+      if (data.draftId) {
+        setDrafts(prevDrafts => {
+          // Remove the deleted draft from the list
+          return prevDrafts.filter(d => d.id !== data.draftId);
+        });
+        
+        // Also remove from localStorage if it exists there
+        const savedDrafts = JSON.parse(localStorage.getItem('drafts') || '[]');
+        const updatedSavedDrafts = savedDrafts.filter(d => d.id !== data.draftId);
+        localStorage.setItem('drafts', JSON.stringify(updatedSavedDrafts));
+      }
+    };
+
+    // Check if socket exists and add listeners
     if (socket) {
       socket.on('draft-created', handleDraftCreated);
-      console.log('👂 Listening for draft-created events');
+      socket.on('draft-deleted', handleDraftDeleted);
+      console.log('👂 Listening for draft-created and draft-deleted events');
       
-      // Cleanup listener on unmount
+      // Cleanup listeners on unmount
       return () => {
         socket.off('draft-created', handleDraftCreated);
+        socket.off('draft-deleted', handleDraftDeleted);
       };
     }
   }, [socket]);
@@ -124,11 +142,41 @@ const Dashboard = ({ user, socket, onJoinDraft, onCreateDraft, onLogout, session
 
 
 
-  const handleDeleteDraft = (draftId, draftName) => {
+  const handleDeleteDraft = async (draftId, draftName) => {
     if (window.confirm(`Are you sure you want to delete "${draftName}"? This cannot be undone.`)) {
-      const updatedDrafts = drafts.filter(d => d.id !== draftId);
-      setDrafts(updatedDrafts);
-      localStorage.setItem('drafts', JSON.stringify(updatedDrafts));
+      try {
+        // Call server to delete the draft
+        const response = await fetch(`${SERVER_URL}/api/drafts/${draftId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            isAdmin: user.isAdmin
+          })
+        });
+
+        if (response.ok) {
+          // Remove from local state
+          const updatedDrafts = drafts.filter(d => d.id !== draftId);
+          setDrafts(updatedDrafts);
+          
+          // Also remove from localStorage if it exists there
+          const savedDrafts = JSON.parse(localStorage.getItem('drafts') || '[]');
+          const updatedSavedDrafts = savedDrafts.filter(d => d.id !== draftId);
+          localStorage.setItem('drafts', JSON.stringify(updatedSavedDrafts));
+          
+          console.log(`✅ Draft "${draftName}" deleted successfully`);
+        } else {
+          const errorData = await response.json();
+          console.error('❌ Failed to delete draft:', errorData.error);
+          alert(`Failed to delete draft: ${errorData.error}`);
+        }
+      } catch (error) {
+        console.error('❌ Error deleting draft:', error);
+        alert('Failed to delete draft. Please try again.');
+      }
     }
   };
 
