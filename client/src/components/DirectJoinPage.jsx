@@ -76,9 +76,8 @@ const DirectJoinPage = () => {
         // Handle direct join validation
         newSocket.on('direct-join-validation', (data) => {
           if (data.success) {
-            // If we already have a user session and it matches the invitation, auto-join
-            if (existingUser && data.teamInfo?.invitedEmail && 
-                existingUser.email?.toLowerCase() === data.teamInfo.invitedEmail.toLowerCase()) {
+            // Auto-join if we have an existing user session
+            if (existingUser) {
               setUser({
                 ...existingUser,
                 teamId: teamId,

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import CreateDraftModal from './CreateDraftModal';
-import DraftInviteModal from './DraftInviteModal';
 import { formatTimeDisplay } from '../utils/timeUtils';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
@@ -8,8 +7,6 @@ const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
 const Dashboard = ({ user, socket, onJoinDraft, onCreateDraft, onLogout, sessionRecovery, onManualRecovery }) => {
   const [drafts, setDrafts] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const [selectedDraftForInvite, setSelectedDraftForInvite] = useState(null);
   const [isLoadingDrafts, setIsLoadingDrafts] = useState(true);
   const [loadError, setLoadError] = useState(null);
 
@@ -125,10 +122,7 @@ const Dashboard = ({ user, socket, onJoinDraft, onCreateDraft, onLogout, session
     }
   };
 
-  const handleInviteDraft = (draft) => {
-    setSelectedDraftForInvite(draft);
-    setShowInviteModal(true);
-  };
+
 
   const handleDeleteDraft = (draftId, draftName) => {
     if (window.confirm(`Are you sure you want to delete "${draftName}"? This cannot be undone.`)) {
@@ -147,16 +141,8 @@ const Dashboard = ({ user, socket, onJoinDraft, onCreateDraft, onLogout, session
 
 
   const canJoinDraft = (draft) => {
-    // User can join if:
-    // 1. They created it
-    // 2. They were invited (via email)
-    // 3. It's an open draft (no specific invitations)
-    // 4. It's from the server (public drafts)
-    return draft.createdBy === user.id || 
-           draft.createdBy === user.username ||
-           (draft.invitedUsers && draft.invitedUsers.includes(user.email)) ||
-           (draft.invitedUsers && draft.invitedUsers.length === 0) ||
-           !draft.invitedUsers; // Server drafts don't have invitedUsers property
+    // All drafts are public - anyone can join
+    return true;
   };
 
   const getDraftSource = (draft) => {
@@ -358,17 +344,6 @@ const Dashboard = ({ user, socket, onJoinDraft, onCreateDraft, onLogout, session
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      {/* Invite button for commissioners */}
-                      {draft.createdBy === user.id && draft.status !== 'completed' && (
-                        <button
-                          onClick={() => handleInviteDraft(draft)}
-                          className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-3 rounded-md text-sm transition-colors duration-200"
-                          title="Invite participants"
-                        >
-                          📨
-                        </button>
-                      )}
-                      
                       {canJoinDraft(draft) && (
                         <>
                           {draft.status === 'scheduled' && (
@@ -434,16 +409,7 @@ const Dashboard = ({ user, socket, onJoinDraft, onCreateDraft, onLogout, session
         />
       )}
 
-      {/* Draft Invitation Modal */}
-      <DraftInviteModal
-        isOpen={showInviteModal}
-        onClose={() => {
-          setShowInviteModal(false);
-          setSelectedDraftForInvite(null);
-        }}
-        draft={selectedDraftForInvite}
-        user={user}
-      />
+
     </div>
   );
 };

@@ -9,7 +9,6 @@ const CreateDraftModal = ({ user, onClose, onCreateDraft }) => {
     timeClock: 1.5,
     tokens: 3,
     draftDateTime: '',
-    invitedEmails: [''],
     teamNames: Array(12).fill('').map((_, i) => `Team ${i + 1}`)
   });
 
@@ -44,31 +43,7 @@ const CreateDraftModal = ({ user, onClose, onCreateDraft }) => {
     }));
   };
 
-  const handleEmailChange = (index, value) => {
-    const newEmails = [...formData.invitedEmails];
-    newEmails[index] = value;
-    setFormData(prev => ({
-      ...prev,
-      invitedEmails: newEmails
-    }));
-  };
 
-  const addEmailField = () => {
-    setFormData(prev => ({
-      ...prev,
-      invitedEmails: [...prev.invitedEmails, '']
-    }));
-  };
-
-  const removeEmailField = (index) => {
-    if (formData.invitedEmails.length > 1) {
-      const newEmails = formData.invitedEmails.filter((_, i) => i !== index);
-      setFormData(prev => ({
-        ...prev,
-        invitedEmails: newEmails
-      }));
-    }
-  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -103,14 +78,8 @@ const CreateDraftModal = ({ user, onClose, onCreateDraft }) => {
     e.preventDefault();
     
     if (validateForm()) {
-      // Filter out empty emails and only include valid ones
-      const validEmails = formData.invitedEmails.filter(email => 
-        email.trim() && email.includes('@')
-      );
-
       const draftConfig = {
         ...formData,
-        invitedEmails: validEmails,
         teamNames: formData.teamNames.slice(0, formData.leagueSize)
       };
 
@@ -282,44 +251,7 @@ const CreateDraftModal = ({ user, onClose, onCreateDraft }) => {
               </div>
             </div>
 
-            {/* Invite Participants */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-3">
-                Invite Participants (Optional)
-              </label>
-              <p className="text-sm text-gray-400 mb-3">
-                Leave empty to create an open draft that anyone can join
-              </p>
-              <div className="space-y-2">
-                {formData.invitedEmails.map((email, index) => (
-                  <div key={index} className="flex gap-2">
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => handleEmailChange(index, e.target.value)}
-                      className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="participant@example.com"
-                    />
-                    {formData.invitedEmails.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeEmailField(index)}
-                        className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={addEmailField}
-                  className="text-blue-400 hover:text-blue-300 text-sm"
-                >
-                  + Add another email
-                </button>
-              </div>
-            </div>
+
 
             {/* Admin Quick Test Feature */}
             {user.isAdmin && (

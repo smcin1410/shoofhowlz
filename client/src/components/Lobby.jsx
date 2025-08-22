@@ -9,8 +9,7 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo, draf
   const [timeClock, setTimeClock] = useState(90); // in seconds - this should match one of the timeOptions values
   const [totalRounds, setTotalRounds] = useState(16);
   const [teams, setTeams] = useState(Array(12).fill().map((_, index) => ({
-    name: `Team ${index + 1}`,
-    email: ''
+    name: `Team ${index + 1}`
   })));
   const [errors, setErrors] = useState({});
   const [chatMessages, setChatMessages] = useState([]);
@@ -34,8 +33,7 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo, draf
   // Update teams array when league size changes
   useEffect(() => {
     setTeams(Array(leagueSize).fill().map((_, index) => ({
-      name: `Team ${index + 1}`,
-      email: ''
+      name: `Team ${index + 1}`
     })));
   }, [leagueSize]);
 
@@ -129,13 +127,6 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo, draf
     teams.forEach((team, index) => {
       if (!team.name.trim()) {
         newErrors[`${index}-name`] = 'Team name is required';
-      }
-      // Email validation is now optional - only validate if email is provided
-      if (team.email.trim()) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(team.email)) {
-          newErrors[`${index}-email`] = 'Please enter a valid email';
-        }
       }
     });
 
@@ -599,21 +590,7 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo, draf
                     )}
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Email (Optional)
-                    </label>
-                    <input
-                      type="email"
-                      value={team.email}
-                      onChange={(e) => handleTeamChange(index, 'email', e.target.value)}
-                      placeholder="player@example.com"
-                      className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder-gray-400"
-                    />
-                    {errors[`${index}-email`] && (
-                      <p className="text-red-400 text-xs mt-1">{errors[`${index}-email`]}</p>
-                    )}
-                  </div>
+
                 </div>
               ))}
             </div>
@@ -652,16 +629,7 @@ const Lobby = ({ onDraftStart, socket, participants, userInfo, setUserInfo, draf
                   </div>
                 ))}
               </div>
-              {userInfo.role === 'commissioner' && (
-                <div className="mt-4">
-                  <button
-                    onClick={() => navigator.clipboard.writeText(window.location.href)}
-                    className="w-full px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
-                  >
-                    Copy Invite Link
-                  </button>
-                </div>
-              )}
+
             </div>
 
             {/* Chat Section */}

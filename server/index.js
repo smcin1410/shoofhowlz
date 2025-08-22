@@ -389,47 +389,17 @@ function generateId() {
   return Math.random().toString(36).substr(2, 9);
 }
 
-// Draft permission validation function
+// Draft permission validation function - All drafts are now public
 function validateDraftPermissions(user, draftState) {
   try {
-    // Admins can always join any draft
-    if (user.isAdmin) {
-      return { allowed: true, reason: 'Admin access' };
-    }
-    
-    // Commissioner (draft creator) can always join their own draft
-    if (draftState.createdBy === user.id || draftState.createdBy === user.username) {
-      return { allowed: true, reason: 'Draft commissioner' };
-    }
-    
-    // Check if user is specifically invited to a team
-    if (draftState.teams && Array.isArray(draftState.teams)) {
-      for (const team of draftState.teams) {
-        if (team.email && team.email.toLowerCase() === user.email?.toLowerCase()) {
-          return { allowed: true, reason: 'Invited to specific team' };
-        }
-      }
-    }
-    
-    // Check if draft has invitation restrictions
-    const hasInvitations = draftState.teams && draftState.teams.some(team => team.email && team.email.trim() !== '');
-    
-    if (!hasInvitations) {
-      // No specific invitations, this is an open draft - anyone can join
-      return { allowed: true, reason: 'Open draft' };
-    } else {
-      // Draft has specific invitations, but user is not invited
-      return { 
-        allowed: false, 
-        reason: 'This is a private draft. You must be invited to join.' 
-      };
-    }
+    // All drafts are public - anyone can join
+    return { allowed: true, reason: 'Public draft' };
     
   } catch (error) {
     console.error('Error validating draft permissions:', error);
     return { 
-      allowed: false, 
-      reason: 'Permission validation error. Please try again.' 
+      allowed: true, 
+      reason: 'Public draft' 
     };
   }
 }
@@ -452,13 +422,12 @@ function createDraftState(draftConfig) {
     teams: draftConfig.teamNames.map((name, index) => ({
       id: index + 1,
       name: name,
-      email: draftConfig.invitedEmails?.[index] || '',
       roster: [],
       timeExtensionTokens: draftConfig.tokens || 3,
-      isPresent: true, // Changed from false to true - teams are present by default
-      isExplicitlyAbsent: false, // New field to track explicit absence
+      isPresent: true, // Teams are present by default
+      isExplicitlyAbsent: false, // Track explicit absence
       assignedParticipant: null,
-      autoPickEnabled: false // Changed from true to false - auto-pick disabled by default
+      autoPickEnabled: false // Auto-pick disabled by default
     })),
     draftOrder: [],
     currentPick: 0,
@@ -2285,28 +2254,19 @@ io.on('connection', (socket) => {
       // Find the specific team being requested
       const requestedTeam = draftState.teams?.find(team => team.id === teamId);
       
-      // For direct join, we validate against the specific team's email invitation
-      if (user && requestedTeam && requestedTeam.email) {
-        if (requestedTeam.email.toLowerCase() !== user.email?.toLowerCase()) {
-          socket.emit('direct-join-validation', {
-            success: false,
-            message: 'This team invitation is for a different email address. Please use the correct email or join through the main lobby.'
-          });
-          return;
-        }
-      }
+      // All teams are available for claiming in the lobby
+      // No email validation needed since all drafts are public
 
       const teamAssignment = assignments?.find(a => a.teamId === teamId);
       
       socket.emit('direct-join-validation', {
         success: true,
-        message: 'Team available for direct join',
+        message: 'Team available for claiming',
         teamInfo: {
           teamId: teamId,
           teamName: teamAssignment?.teamName || requestedTeam?.name || `Team ${teamId}`,
           isPreAssigned: teamAssignment?.isPreAssigned || false,
-          assignedUser: teamAssignment?.assignedUser,
-          invitedEmail: requestedTeam?.email
+          assignedUser: teamAssignment?.assignedUser
         }
       });
 
