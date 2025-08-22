@@ -1870,7 +1870,17 @@ app.get('/api/drafts', (req, res) => {
   try {
     const availableDrafts = [];
     
+    console.log(`🔍 Debug: activeDrafts.size = ${activeDrafts.size}`);
+    console.log(`🔍 Debug: activeDrafts keys = [${Array.from(activeDrafts.keys()).join(', ')}]`);
+    
     activeDrafts.forEach((draftState, draftId) => {
+      console.log(`🔍 Debug: Processing draft ${draftId}:`, {
+        leagueName: draftState.leagueName,
+        commissionerName: draftState.commissionerName,
+        status: draftState.status,
+        teamsLength: draftState.teams?.length
+      });
+      
       // Only include drafts that are available for joining
       const draftInfo = {
         id: draftId,

@@ -12,6 +12,7 @@ import ResultsPage from './components/ResultsPage';
 import DraftOrderAnnouncement from './components/DraftOrderAnnouncement';
 import DirectJoinPage from './components/DirectJoinPage';
 import { useSound } from './hooks/useSound';
+import ConnectionStatus from './components/ConnectionStatus';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
 
@@ -119,7 +120,7 @@ const MainApp = () => {
         try {
           // First health check with extended timeout for cold starts
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+          const timeoutId = setTimeout(() => controller.abort(), 35000); // Increased to 35 seconds
           
           const response = await fetch(SERVER_URL + '/health', {
             signal: controller.signal,
@@ -127,6 +128,9 @@ const MainApp = () => {
             headers: {
               'Content-Type': 'application/json',
             },
+            // Add cache-busting headers
+            cache: 'no-cache',
+            mode: 'cors'
           });
           
           clearTimeout(timeoutId);
@@ -160,72 +164,103 @@ const MainApp = () => {
         // Connect to Socket.IO server when user logs in
         console.log('🔌 Connecting to server:', SERVER_URL);
         const newSocket = io(SERVER_URL, {
-          // Improved settings for Render free tier cold starts
-          timeout: 30000, // 30 second timeout for cold starts
+          // Enhanced settings for Render free tier cold starts
+          timeout: 45000, // Increased to 45 seconds for cold starts
           reconnection: true,
-          reconnectionAttempts: 15,
-          reconnectionDelay: 2000,
-          reconnectionDelayMax: 10000,
-          maxReconnectionAttempts: 15,
+          reconnectionAttempts: 20, // Increased attempts
+          reconnectionDelay: 3000, // Start with 3 second delay
+          reconnectionDelayMax: 15000, // Max 15 second delay
+          maxReconnectionAttempts: 20,
           transports: ['polling', 'websocket'], // Try polling first for cold starts
-          forceNew: true // Force new connection to prevent cached issues
+          forceNew: true, // Force new connection to prevent cached issues
+          upgrade: true, // Allow transport upgrade
+          rememberUpgrade: false, // Don't remember upgrade to force fresh connection
+          pingTimeout: 60000, // 60 second ping timeout
+          pingInterval: 25000 // 25 second ping interval
         });
         setSocket(newSocket);
 
         // Listen for draft state updates
-      newSocket.on('draft-state', (state) => {
-        console.log('📡 draft-state event received:', state);
-        console.log('🔍 State Analysis:', {
-          'Draft started': state.isDraftStarted,
-          'Current pick': state.currentPick,
-          'Total picks': state.draftOrder?.length,
-          'Teams count': state.teams?.length,
-          'Pick history length': state.pickHistory?.length
+        newSocket.on('draft-state', (state) => {
+          console.log('📡 draft-state event received:', state);
+          console.log('🔍 State Analysis:', {
+            'Draft started': state.isDraftStarted,
+            'Current pick': state.currentPick,
+            'Total picks': state.draftOrder?.length,
+            'Teams count': state.teams?.length,
+            'Pick history length': state.pickHistory?.length,
+            'Is complete': state.isComplete,
+            'Status': state.status
+          });
+          
+          // Check if a new pick was made
+          setDraftState(prevState => {
+            // Ensure we have safe defaults
+            const safeState = {
+              ...state,
+              pickHistory: Array.isArray(state.pickHistory) ? state.pickHistory : [],
+              draftOrder: Array.isArray(state.draftOrder) ? state.draftOrder : [],
+              teams: Array.isArray(state.teams) ? state.teams : []
+            };
+            
+            if (prevState && safeState.pickHistory && Array.isArray(safeState.pickHistory) && 
+                prevState.pickHistory && Array.isArray(prevState.pickHistory) &&
+                safeState.pickHistory.length > prevState.pickHistory.length) {
+              const newPick = safeState.pickHistory[safeState.pickHistory.length - 1];
+              console.log('🎯 New pick detected:', newPick);
+              setLastPickAnnounced(newPick);
+              setShowPickAnnouncement(true);
+              if (!isMuted) {
+                playPickSound();
+              }
+            }
+            return safeState;
+          });
+          
+          // Handle state changes
+          if (state && state.isDraftStarted) {
+            console.log('🚀 Draft is active, moving to draft view');
+            // Ensure pickHistory is always an array
+            const safeState = {
+              ...state,
+              pickHistory: Array.isArray(state.pickHistory) ? state.pickHistory : []
+            };
+            saveDraftStateToLocal(safeState);
+            
+            // Update draft status in localStorage
+            const savedDrafts = JSON.parse(localStorage.getItem('drafts') || '[]');
+            const updatedDrafts = savedDrafts.map(draft => {
+              if (draft.id === currentDraft?.id) {
+                return { ...draft, status: 'in_progress' };
+              }
+              return draft;
+            });
+            localStorage.setItem('drafts', JSON.stringify(updatedDrafts));
+            
+            setAppView('draft');
+            setIsInLobby(false);
+            
+            // Check if draft is actually complete - preserve completion status
+            if (state.isComplete || state.status === 'completed') {
+              console.log('🏁 Draft is complete, preserving completion status');
+              setIsDraftComplete(true);
+            } else {
+              setIsDraftComplete(false);
+            }
+          } else {
+            console.log('⏸️ Draft is not started, staying in lobby');
+            setAppView('lobby');
+            setIsInLobby(true);
+            
+            // Check if draft is complete even when not started - preserve completion status
+            if (state.isComplete || state.status === 'completed') {
+              console.log('🏁 Draft is complete, preserving completion status');
+              setIsDraftComplete(true);
+            } else {
+              setIsDraftComplete(false);
+            }
+          }
         });
-        
-                 // Check if a new pick was made
-         setDraftState(prevState => {
-           // Ensure we have safe defaults
-           const safeState = {
-             ...state,
-             pickHistory: Array.isArray(state.pickHistory) ? state.pickHistory : [],
-             draftOrder: Array.isArray(state.draftOrder) ? state.draftOrder : [],
-             teams: Array.isArray(state.teams) ? state.teams : []
-           };
-           
-           if (prevState && safeState.pickHistory && Array.isArray(safeState.pickHistory) && 
-               prevState.pickHistory && Array.isArray(prevState.pickHistory) &&
-               safeState.pickHistory.length > prevState.pickHistory.length) {
-             const newPick = safeState.pickHistory[safeState.pickHistory.length - 1];
-             console.log('🎯 New pick detected:', newPick);
-             setLastPickAnnounced(newPick);
-             setShowPickAnnouncement(true);
-             if (!isMuted) {
-               playPickSound();
-             }
-           }
-           return safeState;
-         });
-        
-                 // Handle state changes
-         if (state && state.isDraftStarted) {
-           console.log('🚀 Draft is active, moving to draft view');
-           // Ensure pickHistory is always an array
-           const safeState = {
-             ...state,
-             pickHistory: Array.isArray(state.pickHistory) ? state.pickHistory : []
-           };
-           saveDraftStateToLocal(safeState);
-           setAppView('draft');
-           setIsInLobby(false);
-           setIsDraftComplete(false);
-         } else {
-           console.log('⏸️ Draft is not started, staying in lobby');
-           setAppView('lobby');
-           setIsInLobby(true);
-           setIsDraftComplete(false);
-         }
-      });
 
       newSocket.on('draft-order-generated', (data) => {
         console.log('📡 draft-order-generated received:', data);
@@ -271,10 +306,30 @@ const MainApp = () => {
         setConnectedParticipantsCount(participantsList.length);
       });
 
-      newSocket.on('draft-complete', () => {
-        console.log('🏁 Draft completed, moving to summary');
+      newSocket.on('draft-complete', (draftState) => {
+        console.log('🏁 Draft completed, updating draft state');
         setIsDraftComplete(true);
-        setAppView('summary');
+        setDraftState(draftState);
+        
+        // Update draft status in localStorage
+        const savedDrafts = JSON.parse(localStorage.getItem('drafts') || '[]');
+        const updatedDrafts = savedDrafts.map(draft => {
+          if (draft.id === currentDraft?.id) {
+            return { ...draft, status: 'completed' };
+          }
+          return draft;
+        });
+        localStorage.setItem('drafts', JSON.stringify(updatedDrafts));
+        
+        // Stay in current view (lobby or draft) to show completion banner
+      });
+
+      newSocket.on('draft-state-response', (draftState) => {
+        console.log('📡 Received draft state response:', draftState);
+        setDraftState(draftState);
+        if (draftState?.isComplete) {
+          setIsDraftComplete(true);
+        }
       });
 
       // Add connection status listeners
@@ -307,6 +362,21 @@ const MainApp = () => {
         if (error.message?.includes('timeout')) {
           console.log('⏰ Server cold start detected - waiting for server to wake up...');
           setServerStatus('waking');
+          
+          // Show user-friendly message for cold starts
+          setTimeout(() => {
+            if (!newSocket.connected) {
+              console.log('⏰ Server is still starting up - this can take up to 2 minutes on free tier');
+              setServerStatus('waking');
+            }
+          }, 15000);
+          
+          setTimeout(() => {
+            if (!newSocket.connected) {
+              console.log('⏰ Extended cold start - server may need more time to initialize');
+              setServerStatus('waking');
+            }
+          }, 30000);
         } else {
           setServerStatus('disconnected');
           setTimeout(() => {
@@ -314,7 +384,7 @@ const MainApp = () => {
               console.warn('❌ Persistent connection issue - server may be down');
               setServerStatus('disconnected');
             }
-          }, 10000); // Increased timeout for cold starts
+          }, 15000); // Increased timeout for cold starts
         }
       });
 
@@ -348,6 +418,12 @@ const MainApp = () => {
             role: isCommissioner ? 'commissioner' : 'participant',
             draftId: currentDraft.id
           });
+          
+          // Request current draft state to restore completion status
+          setTimeout(() => {
+            console.log('🔄 Requesting current draft state after reconnection');
+            newSocket.emit('request-draft-state', { draftId: currentDraft.id });
+          }, 1000);
         }
       });
 
@@ -407,6 +483,12 @@ const MainApp = () => {
     }
   };
 
+  const handleRetryConnection = () => {
+    console.log('🔄 User requested connection retry');
+    setServerStatus('connecting');
+    // The socket will automatically attempt to reconnect
+  };
+
   // Draft management handlers
   const handleCreateDraft = (draftConfig) => {
     console.log('🎯 Creating draft:', draftConfig);
@@ -421,8 +503,16 @@ const MainApp = () => {
     console.log('🎯 Changing appView to lobby...');
     setAppView('lobby');
     
-    // Join the draft room when creating
+    // IMPORTANT: Send the draft to the server so it appears in the API
     if (socket) {
+      console.log('🎯 Sending draft to server via create-draft event');
+      socket.emit('create-draft', {
+        ...draftConfig,
+        commissionerName: user.username,
+        commissionerSocketId: socket.id,
+        createdAt: new Date().toISOString()
+      });
+      
       console.log('🎯 Emitting join-lobby for new draft');
       socket.emit('join-lobby', {
         username: user.username,
@@ -469,6 +559,28 @@ const MainApp = () => {
     }
   };
 
+  const handleReturnToLobby = () => {
+    console.log('🎯 Returning to lobby for draft:', currentDraft?.id);
+    setAppView('lobby');
+    
+    if (socket) {
+      // Rejoin the draft room to get latest state
+      socket.emit('join-lobby', { draftId: currentDraft?.id });
+    }
+  };
+
+  const handleForceCompleteDraft = () => {
+    if (!socket || !draftState?.id) {
+      alert('❌ Cannot force complete: No active draft or connection.');
+      return;
+    }
+    
+    if (confirm('⚠️ Are you sure you want to force complete this draft? This action cannot be undone.')) {
+      console.log('🔧 Force completing draft:', draftState.id);
+      socket.emit('force-complete-draft', { draftId: draftState.id });
+    }
+  };
+
   const handleStartDraft = (config) => {
     console.log('🎯 App.jsx: handleStartDraft called');
     console.log('🔍 Validation Check:', {
@@ -486,7 +598,48 @@ const MainApp = () => {
       } : 'No config'
     });
     
-    // Enhanced server status validation
+    // Check if this is joining an existing draft vs starting a new one
+    const isJoiningExistingDraft = draftState?.isDraftStarted || draftState?.status === 'in_progress';
+    
+    if (isJoiningExistingDraft) {
+      console.log('🏈 Joining existing draft - emitting join-draft event');
+      
+      // Validation checks for joining existing draft
+      if (!socket) {
+        console.error('❌ Cannot join draft: Socket not available');
+        alert('❌ Connection Error: Unable to connect to server. Please refresh the page and try again.');
+        return;
+      }
+      
+      if (!socket.connected) {
+        console.error('❌ Cannot join draft: Socket not connected');
+        alert('❌ Connection Error: Lost connection to server. Please refresh the page and try again.');
+        return;
+      }
+      
+      if (!config?.id) {
+        console.error('❌ Cannot join draft: No draft ID provided');
+        alert('❌ Error: Draft ID is missing. Please try again.');
+        return;
+      }
+      
+      try {
+        console.log('📥 Emitting join-draft event for draft:', config.id);
+        socket.emit('join-draft', { draftId: config.id });
+        console.log('✅ join-draft event emitted successfully');
+        
+        // Transition to draft view
+        setAppView('draft');
+        
+      } catch (error) {
+        console.error('💥 Error emitting join-draft event:', error);
+        alert('❌ Error: Failed to join draft. Please try again.');
+      }
+      
+      return;
+    }
+    
+    // Enhanced server status validation for starting new draft
     if (serverStatus === 'waking') {
       console.error('❌ Cannot start draft: Server is still waking up from cold start');
       alert('⏰ Server Starting: The server is waking up from sleep. Please wait a moment and try again.');
@@ -505,7 +658,7 @@ const MainApp = () => {
       return;
     }
     
-    // Validation checks
+    // Validation checks for starting new draft
     if (!socket) {
       console.error('❌ Cannot start draft: Socket not available');
       alert('❌ Connection Error: Unable to connect to server. Please refresh the page and try again.');
@@ -515,13 +668,22 @@ const MainApp = () => {
     if (!socket.connected) {
       console.error('❌ Cannot start draft: Socket not connected');
       console.error('🎯 Socket connected:', socket.connected);
-      if (serverStatus !== 'connected') {
+      
+      // Provide more specific feedback based on server status
+      if (serverStatus === 'waking') {
         console.error('❌ Server cold start detected - waiting for server to wake up...');
-        alert('⏰ Server Cold Start: Server is starting up. Please wait 10-15 seconds and try again.');
+        alert('⏰ Server is starting up. Please wait 1-2 minutes for the server to fully wake up, then try starting the draft again.');
+        return;
+      } else if (serverStatus === 'connecting') {
+        alert('🔄 Connecting to server. Please wait for the connection to establish, then try starting the draft again.');
+        return;
+      } else if (serverStatus === 'disconnected') {
+        alert('❌ Connection lost. Please check your internet connection and try again.');
+        return;
+      } else {
+        alert('❌ Connection Error: Lost connection to server. Please refresh the page and try again.');
         return;
       }
-      alert('❌ Connection Error: Lost connection to server. Please refresh the page and try again.');
-      return;
     }
     
     if (!isCommissioner) {
@@ -580,10 +742,46 @@ const MainApp = () => {
     }
   };
 
+  // Draft completion verification function
+  const verifyDraftCompletion = () => {
+    if (!draftState) return false;
+    
+    const totalPicks = draftState.draftOrder?.length || 0;
+    const currentPick = draftState.currentPick || 0;
+    const isComplete = draftState.isComplete || false;
+    const status = draftState.status || '';
+    const pickHistoryLength = draftState.pickHistory?.length || 0;
+    
+    console.log('🔍 Draft completion verification:', {
+      totalPicks,
+      currentPick,
+      isComplete,
+      status,
+      pickHistoryLength,
+      calculatedComplete: currentPick >= totalPicks,
+      finalVerification: isComplete || status === 'completed' || currentPick >= totalPicks
+    });
+    
+    return isComplete || status === 'completed' || (currentPick >= totalPicks && totalPicks > 0);
+  };
+
   // Auto-draft feature for admin testing
   const handleAdminAutoDraft = () => {
-    if (user?.isAdmin && socket) {
-      socket.emit('admin-auto-draft', { interval: 1000 }); // 1 second intervals
+    if (user?.isAdmin && socket && draftState?.id) {
+      console.log('🔧 Starting admin auto-draft for draft:', draftState.id);
+      socket.emit('admin-auto-draft', { 
+        draftId: draftState.id, 
+        interval: 100 
+      }); // 0.1 second intervals (100ms)
+    } else {
+      console.warn('❌ Admin auto-draft blocked:', {
+        'Has admin access': !!user?.isAdmin,
+        'Socket connected': !!socket,
+        'Draft state available': !!draftState?.id
+      });
+      if (!draftState?.id) {
+        alert('❌ Error: No active draft found. Please start a draft first.');
+      }
     }
   };
 
@@ -594,12 +792,18 @@ const MainApp = () => {
 
   if (appView === 'dashboard') {
     return (
-      <Dashboard
-        user={user}
-        onJoinDraft={handleJoinDraft}
-        onCreateDraft={handleCreateDraft}
-        onLogout={handleLogout}
-      />
+      <>
+        <Dashboard
+          user={user}
+          onJoinDraft={handleJoinDraft}
+          onCreateDraft={handleCreateDraft}
+          onLogout={handleLogout}
+        />
+        <ConnectionStatus 
+          serverStatus={serverStatus} 
+          onRetry={handleRetryConnection}
+        />
+      </>
     );
   }
 
@@ -615,6 +819,13 @@ const MainApp = () => {
           onStartDraft={handleStartDraft}
           onReturnToDashboard={handleReturnToDashboard}
           onAdminAutoDraft={user?.isAdmin ? handleAdminAutoDraft : null}
+          isDraftComplete={
+            draftState?.isComplete || 
+            draftState?.status === 'completed' ||
+            (draftState?.currentPick >= draftState?.draftOrder?.length && draftState?.draftOrder?.length > 0) || 
+            false
+          }
+          draftState={draftState}
         />
         
         {showDraftOrderAnnouncement && (
@@ -674,6 +885,8 @@ const MainApp = () => {
           isCommissioner={isCommissioner}
           user={user}
           onReturnToDashboard={handleReturnToDashboard}
+          onReturnToLobby={handleReturnToLobby}
+          onForceCompleteDraft={handleForceCompleteDraft}
           onAdminAutoDraft={user?.isAdmin ? handleAdminAutoDraft : null}
         />
         
@@ -706,7 +919,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<MainApp />} />
         <Route path="/display" element={<DisplayPage />} />
-        <Route path="/results/:draftId" element={<ResultsPage />} />
+        <Route path="/results" element={<ResultsPage />} />
         <Route path="/join/:draftId/team/:teamId" element={<DirectJoinPage />} />
       </Routes>
     </div>
