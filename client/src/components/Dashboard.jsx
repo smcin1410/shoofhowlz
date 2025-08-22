@@ -145,17 +145,28 @@ const Dashboard = ({ user, socket, onJoinDraft, onCreateDraft, onLogout, session
   const handleDeleteDraft = async (draftId, draftName) => {
     if (window.confirm(`Are you sure you want to delete "${draftName}"? This cannot be undone.`)) {
       try {
+        console.log('🔍 DELETE DEBUG: Starting delete request');
+        console.log('🔍 DELETE DEBUG: SERVER_URL:', SERVER_URL);
+        console.log('🔍 DELETE DEBUG: draftId:', draftId);
+        console.log('🔍 DELETE DEBUG: user:', { id: user.id, isAdmin: user.isAdmin });
+        
+        const requestBody = {
+          userId: user.id,
+          isAdmin: user.isAdmin
+        };
+        console.log('🔍 DELETE DEBUG: Request body:', requestBody);
+        
         // Call server to delete the draft
         const response = await fetch(`${SERVER_URL}/api/drafts/${draftId}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            userId: user.id,
-            isAdmin: user.isAdmin
-          })
+          body: JSON.stringify(requestBody)
         });
+        
+        console.log('🔍 DELETE DEBUG: Response status:', response.status);
+        console.log('🔍 DELETE DEBUG: Response ok:', response.ok);
 
         if (response.ok) {
           // Remove from local state
@@ -169,12 +180,20 @@ const Dashboard = ({ user, socket, onJoinDraft, onCreateDraft, onLogout, session
           
           console.log(`✅ Draft "${draftName}" deleted successfully`);
         } else {
-          const errorData = await response.json();
-          console.error('❌ Failed to delete draft:', errorData.error);
-          alert(`Failed to delete draft: ${errorData.error}`);
+          console.log('🔍 DELETE DEBUG: Response not ok, trying to get error data');
+          try {
+            const errorData = await response.json();
+            console.error('❌ Failed to delete draft:', errorData.error);
+            alert(`Failed to delete draft: ${errorData.error}`);
+          } catch (jsonError) {
+            console.error('❌ Failed to parse error response:', jsonError);
+            console.error('❌ Response text:', await response.text());
+            alert('Failed to delete draft: Unknown error');
+          }
         }
       } catch (error) {
         console.error('❌ Error deleting draft:', error);
+        console.error('❌ Error details:', error.message, error.stack);
         alert('Failed to delete draft. Please try again.');
       }
     }

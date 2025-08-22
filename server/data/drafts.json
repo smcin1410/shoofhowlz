@@ -14134,7 +14134,8 @@
         "isPresent": true,
         "isExplicitlyAbsent": false,
         "assignedParticipant": "LOCAL",
-        "autoPickEnabled": false
+        "autoPickEnabled": false,
+        "autoPickInProgress": false
       },
       {
         "id": 2,
@@ -14145,7 +14146,8 @@
         "isPresent": true,
         "isExplicitlyAbsent": false,
         "assignedParticipant": null,
-        "autoPickEnabled": false
+        "autoPickEnabled": false,
+        "autoPickInProgress": false
       },
       {
         "id": 3,
@@ -14156,7 +14158,8 @@
         "isPresent": true,
         "isExplicitlyAbsent": false,
         "assignedParticipant": "Sean",
-        "autoPickEnabled": false
+        "autoPickEnabled": false,
+        "autoPickInProgress": false
       },
       {
         "id": 4,
@@ -14167,7 +14170,8 @@
         "isPresent": true,
         "isExplicitlyAbsent": false,
         "assignedParticipant": null,
-        "autoPickEnabled": false
+        "autoPickEnabled": false,
+        "autoPickInProgress": false
       },
       {
         "id": 5,
@@ -14178,7 +14182,8 @@
         "isPresent": true,
         "isExplicitlyAbsent": false,
         "assignedParticipant": null,
-        "autoPickEnabled": false
+        "autoPickEnabled": false,
+        "autoPickInProgress": false
       },
       {
         "id": 6,
@@ -14189,7 +14194,8 @@
         "isPresent": true,
         "isExplicitlyAbsent": false,
         "assignedParticipant": null,
-        "autoPickEnabled": false
+        "autoPickEnabled": false,
+        "autoPickInProgress": false
       },
       {
         "id": 7,
@@ -14200,7 +14206,8 @@
         "isPresent": true,
         "isExplicitlyAbsent": false,
         "assignedParticipant": null,
-        "autoPickEnabled": false
+        "autoPickEnabled": false,
+        "autoPickInProgress": false
       },
       {
         "id": 8,
@@ -14211,7 +14218,8 @@
         "isPresent": true,
         "isExplicitlyAbsent": false,
         "assignedParticipant": null,
-        "autoPickEnabled": false
+        "autoPickEnabled": false,
+        "autoPickInProgress": false
       },
       {
         "id": 9,
@@ -14222,7 +14230,8 @@
         "isPresent": true,
         "isExplicitlyAbsent": false,
         "assignedParticipant": null,
-        "autoPickEnabled": false
+        "autoPickEnabled": false,
+        "autoPickInProgress": false
       },
       {
         "id": 10,
@@ -14233,7 +14242,8 @@
         "isPresent": true,
         "isExplicitlyAbsent": false,
         "assignedParticipant": null,
-        "autoPickEnabled": false
+        "autoPickEnabled": false,
+        "autoPickInProgress": false
       },
       {
         "id": 11,
@@ -14244,7 +14254,8 @@
         "isPresent": true,
         "isExplicitlyAbsent": false,
         "assignedParticipant": null,
-        "autoPickEnabled": false
+        "autoPickEnabled": false,
+        "autoPickInProgress": false
       },
       {
         "id": 12,
@@ -14255,7 +14266,8 @@
         "isPresent": true,
         "isExplicitlyAbsent": false,
         "assignedParticipant": null,
-        "autoPickEnabled": false
+        "autoPickEnabled": false,
+        "autoPickInProgress": false
       }
     ],
     "draftOrder": [
@@ -43682,7 +43694,8 @@
         "isPresent": true,
         "isExplicitlyAbsent": false,
         "assignedParticipant": null,
-        "autoPickEnabled": false
+        "autoPickEnabled": false,
+        "autoPickInProgress": false
       },
       {
         "id": 2,
@@ -43693,7 +43706,8 @@
         "isPresent": true,
         "isExplicitlyAbsent": false,
         "assignedParticipant": null,
-        "autoPickEnabled": false
+        "autoPickEnabled": false,
+        "autoPickInProgress": false
       },
       {
         "id": 3,
@@ -43704,7 +43718,8 @@
         "isPresent": true,
         "isExplicitlyAbsent": false,
         "assignedParticipant": null,
-        "autoPickEnabled": false
+        "autoPickEnabled": false,
+        "autoPickInProgress": false
       },
       {
         "id": 4,
@@ -43715,7 +43730,8 @@
         "isPresent": true,
         "isExplicitlyAbsent": false,
         "assignedParticipant": null,
-        "autoPickEnabled": false
+        "autoPickEnabled": false,
+        "autoPickInProgress": false
       }
     ],
     "draftOrder": [

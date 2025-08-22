@@ -28,6 +28,29 @@ const rateLimit = new Map();
 const RATE_LIMIT_WINDOW = 1000; // 1 second
 const MAX_EVENTS_PER_WINDOW = 10;
 
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "DELETE"]
+  },
+  // Performance optimizations
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
+  // Reduce memory usage
+  maxHttpBufferSize: 1e6, // 1MB
+  // Optimize for real-time updates
+  upgradeTimeout: 10000,
+  // Enable compression
+  perMessageDeflate: {
+    threshold: 32768,
+    zlibInflateOptions: {
+      chunkSize: 10 * 1024
+    }
+  }
+});
+
 // Rate limiting middleware
 io.use((socket, next) => {
   const clientId = socket.handshake.address;
@@ -49,29 +72,6 @@ io.use((socket, next) => {
   
   clientLimit.count++;
   next();
-});
-
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST"]
-  },
-  // Performance optimizations
-  pingTimeout: 60000,
-  pingInterval: 25000,
-  transports: ['websocket', 'polling'],
-  allowEIO3: true,
-  // Reduce memory usage
-  maxHttpBufferSize: 1e6, // 1MB
-  // Optimize for real-time updates
-  upgradeTimeout: 10000,
-  // Enable compression
-  perMessageDeflate: {
-    threshold: 32768,
-    zlibInflateOptions: {
-      chunkSize: 10 * 1024
-    }
-  }
 });
 
 const PORT = process.env.PORT || 4000;
@@ -2470,6 +2470,11 @@ app.get('/api/drafts', (req, res) => {
 
 // Delete a draft
 app.delete('/api/drafts/:draftId', (req, res) => {
+  console.log('🔍 DELETE endpoint hit!');
+  console.log('🔍 Request params:', req.params);
+  console.log('🔍 Request body:', req.body);
+  console.log('🔍 Request headers:', req.headers);
+  
   try {
     const { draftId } = req.params;
     const { userId, isAdmin } = req.body; // Get user info from request body
