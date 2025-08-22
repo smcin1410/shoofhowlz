@@ -5,7 +5,7 @@ import { formatTimeDisplay } from '../utils/timeUtils';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
 
-const Dashboard = ({ user, socket, onJoinDraft, onCreateDraft, onLogout }) => {
+const Dashboard = ({ user, socket, onJoinDraft, onCreateDraft, onLogout, sessionRecovery, onManualRecovery }) => {
   const [drafts, setDrafts] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -224,6 +224,31 @@ const Dashboard = ({ user, socket, onJoinDraft, onCreateDraft, onLogout }) => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Manual Session Recovery Section */}
+        {sessionRecovery && sessionRecovery.session && !sessionRecovery.isAttempting && (
+          <div className="mb-8 bg-blue-900 border border-blue-700 rounded-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-blue-200 mb-2">
+                  🔄 Active Draft Session Found
+                </h3>
+                <p className="text-blue-300 mb-2">
+                  You have an active session in draft: <span className="font-medium">{sessionRecovery.session.draftId}</span>
+                </p>
+                <p className="text-blue-300 text-sm">
+                  Joined: {new Date(sessionRecovery.session.joinedAt).toLocaleString()}
+                </p>
+              </div>
+              <button
+                onClick={() => onManualRecovery && onManualRecovery(sessionRecovery.session)}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-md transition-colors duration-200"
+              >
+                🔄 Rejoin Draft
+              </button>
+            </div>
+          </div>
+        )}
+        
         {isLoadingDrafts ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>

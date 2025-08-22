@@ -23,14 +23,69 @@ if (process.env.NODE_ENV === 'production') {
   allowedOrigins.push(/https:\/\/.*\.vercel\.app$/);
 }
 
+// Add connection pooling and rate limiting
+const rateLimit = new Map();
+const RATE_LIMIT_WINDOW = 1000; // 1 second
+const MAX_EVENTS_PER_WINDOW = 10;
+
+// Rate limiting middleware
+io.use((socket, next) => {
+  const clientId = socket.handshake.address;
+  const now = Date.now();
+  
+  if (!rateLimit.has(clientId)) {
+    rateLimit.set(clientId, { count: 0, resetTime: now + RATE_LIMIT_WINDOW });
+  }
+  
+  const clientLimit = rateLimit.get(clientId);
+  if (now > clientLimit.resetTime) {
+    clientLimit.count = 0;
+    clientLimit.resetTime = now + RATE_LIMIT_WINDOW;
+  }
+  
+  if (clientLimit.count >= MAX_EVENTS_PER_WINDOW) {
+    return next(new Error('Rate limit exceeded'));
+  }
+  
+  clientLimit.count++;
+  next();
+});
+
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
     methods: ["GET", "POST"]
+  },
+  // Performance optimizations
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
+  // Reduce memory usage
+  maxHttpBufferSize: 1e6, // 1MB
+  // Optimize for real-time updates
+  upgradeTimeout: 10000,
+  // Enable compression
+  perMessageDeflate: {
+    threshold: 32768,
+    zlibInflateOptions: {
+      chunkSize: 10 * 1024
+    }
   }
 });
 
 const PORT = process.env.PORT || 4000;
+
+// Add server health monitoring
+const serverStats = {
+  startTime: Date.now(),
+  totalConnections: 0,
+  activeConnections: 0,
+  totalDrafts: 0,
+  totalPicks: 0,
+  averageResponseTime: 0,
+  errors: []
+};
 
 // Enhanced global error handlers with connection tracking
 let connectionErrors = [];
@@ -212,6 +267,11 @@ const draftTimers = new Map(); // Map of draftId -> timer info
 const draftTeamAssignments = new Map(); // Map of draftId -> team assignments
 const draftResultsStorage = new Map(); // Map of draftId -> stored draft results for print
 
+// Enhanced user session tracking for reconnection
+const userDraftSessions = new Map(); // Map of userId -> { draftId, username, teamAssignment, joinedAt, isActive }
+const socketUserMap = new Map(); // Map of socketId -> userId for quick lookup
+const draftUserSessions = new Map(); // Map of draftId -> Set of userIds for quick draft user lookup
+
 // Persistent draft storage
 const DRAFTS_FILE = path.join(__dirname, 'data', 'drafts.json');
 
@@ -220,6 +280,66 @@ const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
   console.log('📁 Created data directory');
+}
+
+// Enhanced user session management functions
+function saveUserDraftSession(userId, draftId, username, teamAssignment = null) {
+  const session = {
+    draftId,
+    username,
+    teamAssignment,
+    joinedAt: new Date().toISOString(),
+    isActive: true,
+    lastSeen: new Date().toISOString()
+  };
+  
+  userDraftSessions.set(userId, session);
+  
+  // Track user in draft
+  if (!draftUserSessions.has(draftId)) {
+    draftUserSessions.set(draftId, new Set());
+  }
+  draftUserSessions.get(draftId).add(userId);
+  
+  console.log(`💾 Saved user session: ${username} (${userId}) in draft ${draftId}`);
+}
+
+function getUserDraftSession(userId) {
+  return userDraftSessions.get(userId);
+}
+
+function clearUserDraftSession(userId) {
+  const session = userDraftSessions.get(userId);
+  if (session) {
+    // Remove from draft tracking
+    const draftUsers = draftUserSessions.get(session.draftId);
+    if (draftUsers) {
+      draftUsers.delete(userId);
+      if (draftUsers.size === 0) {
+        draftUserSessions.delete(session.draftId);
+      }
+    }
+    
+    userDraftSessions.delete(userId);
+    console.log(`🗑️ Cleared user session for ${userId}`);
+  }
+}
+
+function updateUserLastSeen(userId) {
+  const session = userDraftSessions.get(userId);
+  if (session) {
+    session.lastSeen = new Date().toISOString();
+  }
+}
+
+function getDraftActiveUsers(draftId) {
+  const userIds = draftUserSessions.get(draftId);
+  if (!userIds) return [];
+  
+  return Array.from(userIds).map(userId => {
+    const session = userDraftSessions.get(userId);
+    return session ? { ...session, userId } : null;
+  }).filter(Boolean);
 }
 
 // Load drafts from file on server start
@@ -587,6 +707,73 @@ function autoDraftPlayer(draftId, forceAutoPick = false) {
   }
 }
 
+// Separate function for processing draft picks - optimized for immediate processing
+function processDraftPick(draftId, playerId, username, socketId) {
+  try {
+    const draftState = activeDrafts.get(draftId);
+    if (!draftState) {
+      return { success: false, error: 'Draft not found' };
+    }
+
+    if (draftState.isComplete) {
+      return { success: false, error: 'Draft is already complete' };
+    }
+
+    // Find player
+    const playerIndex = draftState.availablePlayers.findIndex(p => p.rank === parseInt(playerId));
+    if (playerIndex === -1) {
+      return { success: false, error: 'Player not found' };
+    }
+
+    const player = draftState.availablePlayers[playerIndex];
+    const currentTeam = getCurrentTeam(draftState);
+    
+    if (!currentTeam) {
+      return { success: false, error: 'No current team found' };
+    }
+
+    // Validate pick
+    if (!canDraftPosition(currentTeam, player.position)) {
+      return { success: false, error: 'Position cap exceeded' };
+    }
+
+    // Process the pick
+    draftState.availablePlayers.splice(playerIndex, 1);
+    draftState.draftedPlayers.push(player);
+    currentTeam.roster.push(player);
+    
+    // Add to pick history
+    draftState.pickHistory.push({
+      player,
+      team: currentTeam,
+      pickIndex: draftState.currentPick,
+      pickNumber: draftState.currentPick + 1,
+      timestamp: Date.now()
+    });
+
+    // Move to next pick
+    draftState.currentPick++;
+
+    // Check if draft is complete
+    if (draftState.currentPick >= draftState.draftOrder.length) {
+      draftState.isComplete = true;
+    }
+
+    // Clear any existing timer
+    const existingTimer = draftTimers.get(draftId);
+    if (existingTimer?.interval) {
+      clearInterval(existingTimer.interval);
+      draftTimers.delete(draftId);
+    }
+
+    return { success: true, draftState };
+    
+  } catch (error) {
+    console.error('💥 Error processing draft pick:', error);
+    return { success: false, error: 'Server error processing pick' };
+  }
+}
+
 function draftPlayer(draftId, playerId, isAutoPick = false) {
   try {
     const draftState = activeDrafts.get(draftId);
@@ -689,6 +876,17 @@ function draftPlayer(draftId, playerId, isAutoPick = false) {
       // Emit draft-complete event to all clients
       io.to(`draft-${draftId}`).emit("draft-complete", draftState);
       console.log("📢 Draft complete event emitted");
+      
+      // Clean up user sessions for this draft
+      const draftUsers = draftUserSessions.get(draftId);
+      if (draftUsers) {
+        draftUsers.forEach(userId => {
+          clearUserDraftSession(userId);
+        });
+        draftUserSessions.delete(draftId);
+        console.log(`🧹 Cleared user sessions for completed draft ${draftId}`);
+      }
+      
       // Clean up all resources when draft is complete
       cleanupDraftResources(draftId);
     }
@@ -755,7 +953,6 @@ function draftPlayer(draftId, playerId, isAutoPick = false) {
 
 function startDraftTimer(draftId) {
   console.log(`🔍 TIMER DEBUG: startDraftTimer called for draft ${draftId}`);
-  console.log(`🔍 TIMER DEBUG: Current active timers: ${draftTimers.size}`);
   
   try {
     const draftState = activeDrafts.get(draftId);
@@ -770,22 +967,12 @@ function startDraftTimer(draftId) {
       return;
     }
 
-    // CRITICAL FIX: Use atomic timer management to prevent race conditions
+    // CRITICAL: Clear any existing timer first
     const existingTimer = draftTimers.get(draftId);
     if (existingTimer?.interval) {
-      console.log('🔥 RACE CONDITION DETECTED: Timer already running for draft:', draftId);
-      console.log('🔥 Existing timer started at:', new Date(existingTimer.startedAt).toISOString());
-      console.log('🔥 Time elapsed:', Date.now() - existingTimer.startedAt, 'ms');
-      
-      // Force clear the existing timer
-      try {
-        clearInterval(existingTimer.interval);
-        console.log('✅ Successfully cleared existing timer');
-      } catch (clearError) {
-        console.error('💥 Error clearing existing timer:', clearError);
-      }
+      console.log('🔥 Clearing existing timer for draft:', draftId);
+      clearInterval(existingTimer.interval);
       draftTimers.delete(draftId);
-      console.log('✅ Deleted timer from map');
     }
 
     // Check if current team should auto-pick
@@ -947,7 +1134,41 @@ function adminAutoDraft(draftId, interval = 1000) {
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
+  serverStats.totalConnections++;
+  serverStats.activeConnections++;
   console.log('New client connected:', socket.id);
+  
+  // Track user session on connection
+  socket.on('user-connect', (data) => {
+    const { userId, username } = data;
+    if (userId && username) {
+      socketUserMap.set(socket.id, userId);
+      
+      // Check if user has an active draft session
+      const session = getUserDraftSession(userId);
+      if (session && session.isActive) {
+        console.log(`🔄 User ${username} reconnecting with active session in draft ${session.draftId}`);
+        socket.emit('session-recovery', {
+          session,
+          message: 'You have an active draft session. Attempting to reconnect...'
+        });
+      }
+    }
+  });
+  
+  socket.on('disconnect', () => {
+    serverStats.activeConnections--;
+    const userId = socketUserMap.get(socket.id);
+    
+    if (userId) {
+      // Update last seen but don't clear session immediately
+      updateUserLastSeen(userId);
+      console.log(`📱 User ${userId} disconnected (session preserved for reconnection)`);
+    }
+    
+    socketUserMap.delete(socket.id);
+    console.log('Client disconnected:', socket.id);
+  });
 
   // Join a draft lobby
   socket.on('join-lobby', (data) => {
@@ -981,6 +1202,75 @@ io.on('connection', (socket) => {
     }
 
     console.log(`${username} joined draft ${draftId} as ${role}`);
+  });
+
+  // Session recovery - attempt to rejoin draft automatically
+  socket.on('recover-session', (data) => {
+    const { userId } = data;
+    
+    if (!userId) {
+      console.log('⚠️ No userId provided for session recovery');
+      socket.emit('session-recovery-error', { message: 'User ID required for session recovery' });
+      return;
+    }
+    
+    console.log(`🔄 Session recovery attempt for user ${userId}`);
+    
+    const session = getUserDraftSession(userId);
+    if (!session || !session.isActive) {
+      console.log(`⚠️ No active session found for user ${userId}`);
+      socket.emit('session-recovery-error', { message: 'No active draft session found' });
+      return;
+    }
+    
+    const { draftId, username } = session;
+    const draftState = activeDrafts.get(draftId);
+    
+    if (!draftState) {
+      console.log(`⚠️ Draft ${draftId} no longer exists for user ${userId}`);
+      clearUserDraftSession(userId);
+      socket.emit('session-recovery-error', { message: 'The draft you were participating in no longer exists' });
+      return;
+    }
+    
+    // Check if draft is still active
+    if (draftState.status === 'completed' || draftState.isComplete) {
+      console.log(`⚠️ Draft ${draftId} is completed for user ${userId}`);
+      clearUserDraftSession(userId);
+      socket.emit('session-recovery-error', { message: 'The draft you were participating in has been completed' });
+      return;
+    }
+    
+    console.log(`✅ Session recovery successful for user ${userId} in draft ${draftId}`);
+    
+    // Update session
+    updateUserLastSeen(userId);
+    socketUserMap.set(socket.id, userId);
+    
+    // Join the draft room
+    socket.join(`draft-${draftId}`);
+    
+    // Send the current draft state
+    socket.emit('draft-state', draftState);
+    
+    // Send participants and team assignments
+    const participants = draftParticipants.get(draftId);
+    if (participants) {
+      const participantsList = Array.from(participants.values());
+      socket.emit('participants-update', participantsList);
+    }
+    
+    const assignments = draftTeamAssignments.get(draftId);
+    if (assignments) {
+      socket.emit('team-assignments-update', assignments);
+    }
+    
+    // Send recovery success
+    socket.emit('session-recovered', {
+      draftId,
+      username,
+      message: 'Successfully reconnected to your draft!'
+    });
   });
 
   // Join draft (get current draft state) with permission validation
@@ -1022,6 +1312,15 @@ io.on('connection', (socket) => {
     
     console.log(`✅ User ${user.username || user.id} authorized to join draft ${draftId}`);
     
+    // Save user session for reconnection
+    const teamAssignment = draftTeamAssignments.get(draftId)?.find(team => 
+      team.owner === user.username || team.ownerId === user.id
+    );
+    saveUserDraftSession(user.id, draftId, user.username, teamAssignment);
+    
+    // Track socket to user mapping
+    socketUserMap.set(socket.id, user.id);
+    
     // Join the draft room
     socket.join(`draft-${draftId}`);
     
@@ -1042,6 +1341,12 @@ io.on('connection', (socket) => {
     if (assignments) {
       socket.emit('team-assignments-update', assignments);
     }
+    
+    // Send session confirmation
+    socket.emit('session-saved', {
+      draftId,
+      message: 'Your session has been saved for automatic reconnection'
+    });
   });
 
   // Handle chat messages
@@ -1564,7 +1869,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Continue draft (start next timer)
+  // Continue draft (start next timer) - Enhanced timer reset
   socket.on('continue-draft', (data) => {
     const { draftId } = data;
     if (draftId) {
@@ -1578,17 +1883,34 @@ io.on('connection', (socket) => {
         console.log('⏹️ Cleared existing timer before starting new one');
       }
       
-      // Start new timer
-      startDraftTimer(draftId);
+      // Reset timer state
+      io.to(`draft-${draftId}`).emit('timer-update', {
+        timeRemaining: 0,
+        canExtend: false,
+        currentPick: 0
+      });
+      
+      // Start new timer with small delay
+      setTimeout(() => {
+        startDraftTimer(draftId);
+      }, 200);
+      
     } else {
       console.log('No draftId provided for continue-draft request');
     }
   });
 
-  // Draft player
+  // Draft player - Optimized for immediate processing
   socket.on('draft-player', (data) => {
     try {
       const { draftId, playerId, username } = data;
+      
+      // Immediate acknowledgment
+      socket.emit('draft-acknowledged', { 
+        playerId, 
+        timestamp: Date.now() 
+      });
+      
       if (!draftId || !playerId) {
         console.log('⚠️ Missing draftId or playerId for draft-player request');
         socket.emit('draft-error', { message: 'Missing required data' });
@@ -1597,82 +1919,23 @@ io.on('connection', (socket) => {
 
       console.log(`📥 Draft player request: ${playerId} for draft ${draftId} by user: ${username || 'unknown'}`);
       
-      // Additional validation
-      const draftState = activeDrafts.get(draftId);
-      if (!draftState) {
-        console.log('⚠️ Draft not found:', draftId);
-        socket.emit('draft-error', { message: 'Draft not found' });
-        return;
-      }
-
-      if (draftState.isComplete) {
-        console.log('⚠️ Draft already complete:', draftId);
-        socket.emit('draft-error', { message: 'Draft is already complete' });
-        return;
-      }
-
-      // NEW: Permission validation - check if it's this user's turn
-      const currentTeam = getCurrentTeam(draftState);
-      if (!currentTeam) {
-        console.log('⚠️ No current team found for draft:', draftId);
-        socket.emit('draft-error', { message: 'Draft state error' });
-        return;
-      }
-
-      // Get team assignments to check which user controls which team
-      const teamAssignments = draftTeamAssignments.get(draftId) || [];
-      const currentTeamAssignment = teamAssignments.find(a => a.teamId === currentTeam.id);
+      // Process draft immediately
+      const result = processDraftPick(draftId, playerId, username, socket.id);
       
-      // DEBUG: If no username provided, investigate the source
-      if (!username) {
-        console.log('🚫 BLOCKING DRAFT - No username provided in request');
-        console.log('🔍 Socket details:', {
-          socketId: socket.id,
-          rooms: Array.from(socket.rooms),
-          handshake: socket.handshake?.headers?.origin || 'unknown',
-          transport: socket.conn?.transport?.name || 'unknown'
-        });
-        console.log('🔍 Request data:', data);
-        socket.emit('draft-error', { 
-          message: 'Username is required for draft requests. Please refresh and try again.' 
-        });
-        return;
+      if (result.success) {
+        // Broadcast immediately
+        io.to(`draft-${draftId}`).emit('draft-state', result.draftState);
+        
+        // Start next timer immediately
+        setTimeout(() => {
+          startDraftTimer(draftId);
+        }, 100); // Small delay to ensure state is updated
+        
+        console.log(`✅ Draft processed successfully: ${playerId}`);
+      } else {
+        socket.emit('draft-error', { message: result.error });
       }
       
-      // Allow draft if:
-      // 1. User is assigned to the current team
-      // 2. Commissioner can draft for any team (fallback)
-      // 3. No specific assignment exists (open draft)
-      const userCanDraft = 
-        currentTeamAssignment?.assignedUser === socket.id ||  // User assigned to current team
-        currentTeamAssignment?.assignedUser === username ||   // User assigned by username
-        draftState.createdBy === username ||                  // Commissioner override
-        !currentTeamAssignment?.assignedUser;                 // No assignment (open draft)
-      
-      if (!userCanDraft) {
-        console.log('🚫 Permission denied - User cannot draft for current team:', {
-          currentTeam: currentTeam.name,
-          currentTeamId: currentTeam.id,
-          requestingUser: username,
-          assignedUser: currentTeamAssignment?.assignedUser,
-          isCommissioner: draftState.createdBy === username
-        });
-        socket.emit('draft-error', { 
-          message: `It's ${currentTeam.name}'s turn to draft. You can only draft when it's your team's turn.` 
-        });
-        return;
-      }
-
-      console.log('✅ Permission granted - User can draft for current team:', {
-        currentTeam: currentTeam.name,
-        requestingUser: username,
-        assignedUser: currentTeamAssignment?.assignedUser
-      });
-
-      const success = draftPlayer(draftId, playerId, false);
-      if (!success) {
-        socket.emit('draft-error', { message: 'Draft failed - player may be unavailable or invalid' });
-      }
     } catch (error) {
       console.error('💥 Error in draft-player handler:', error);
       socket.emit('draft-error', { message: 'Server error during draft' });
@@ -1987,6 +2250,16 @@ io.on('connection', (socket) => {
     // Emit draft complete event
     io.to(`draft-${draftId}`).emit('draft-complete', draftState);
     
+    // Clean up user sessions for this draft
+    const draftUsers = draftUserSessions.get(draftId);
+    if (draftUsers) {
+      draftUsers.forEach(userId => {
+        clearUserDraftSession(userId);
+      });
+      draftUserSessions.delete(draftId);
+      console.log(`🧹 Cleared user sessions for force-completed draft ${draftId}`);
+    }
+    
     // Clean up resources
     cleanupDraftResources(draftId);
     
@@ -2286,11 +2559,30 @@ app.get('/api/get-draft-results/:draftId', (req, res) => {
   }
 });
 
+// Enhanced health check endpoint
 app.get('/health', (req, res) => {
+  const uptime = Date.now() - serverStats.startTime;
+  const memoryUsage = process.memoryUsage();
+  
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
+    uptime: Math.floor(uptime / 1000),
     activeDrafts: activeDrafts.size,
+    connectedClients: io.engine.clientsCount || 0,
+    serverStats: {
+      totalConnections: serverStats.totalConnections,
+      activeConnections: serverStats.activeConnections,
+      totalDrafts: serverStats.totalDrafts,
+      totalPicks: serverStats.totalPicks,
+      averageResponseTime: serverStats.averageResponseTime,
+      memoryUsage: {
+        rss: Math.round(memoryUsage.rss / 1024 / 1024) + 'MB',
+        heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024) + 'MB',
+        heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024) + 'MB'
+      }
+    },
+    recentErrors: serverStats.errors.slice(-5),
     activeTimers: draftTimers.size,
     connectionErrors: connectionErrors.length,
     timerErrors: timerErrors.length

@@ -16,6 +16,50 @@ import ConnectionStatus from './components/ConnectionStatus';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
 
+// Enhanced session management functions
+const saveUserDraftSession = (draftId, user, teamAssignment = null) => {
+  try {
+    const session = {
+      draftId,
+      userId: user.id,
+      username: user.username,
+      teamAssignment,
+      joinedAt: new Date().toISOString(),
+      isActive: true
+    };
+    
+    localStorage.setItem('userDraftSession', JSON.stringify(session));
+    console.log('💾 Saved user draft session:', session);
+  } catch (error) {
+    console.error('Error saving user draft session:', error);
+  }
+};
+
+const loadUserDraftSession = () => {
+  try {
+    const saved = localStorage.getItem('userDraftSession');
+    if (saved) {
+      const session = JSON.parse(saved);
+      if (session.isActive) {
+        console.log('🔄 Found active user draft session:', session);
+        return session;
+      }
+    }
+  } catch (error) {
+    console.error('Error loading user draft session:', error);
+  }
+  return null;
+};
+
+const clearUserDraftSession = () => {
+  try {
+    localStorage.removeItem('userDraftSession');
+    console.log('🗑️ Cleared user draft session');
+  } catch (error) {
+    console.error('Error clearing user draft session:', error);
+  }
+};
+
 // Auto-save draft state to localStorage
 const saveDraftStateToLocal = (draftState) => {
   try {
@@ -73,6 +117,14 @@ const MainApp = () => {
   const [connectedParticipantsCount, setConnectedParticipantsCount] = useState(0);
   const [serverStatus, setServerStatus] = useState('connecting'); // 'connecting', 'connected', 'disconnected', 'waking'
   
+  // Session recovery state
+  const [sessionRecovery, setSessionRecovery] = useState({
+    isAttempting: false,
+    session: null,
+    message: '',
+    error: null
+  });
+  
   // UI state
   const [appView, setAppView] = useState('dashboard'); // 'dashboard', 'lobby', 'draft'
   
@@ -95,19 +147,50 @@ const MainApp = () => {
   
   const isMuted = false;
 
-  // Check for existing user session on app load
+  // Session recovery handler
+  const handleSessionRecovery = useCallback((session) => {
+    if (!session || !socket) return;
+    
+    console.log('🔄 Attempting to recover session:', session);
+    
+    socket.emit('recover-session', {
+      userId: session.userId || user?.id
+    });
+  }, [socket, user]);
+
+  // Check for existing user session and attempt recovery on app load
   useEffect(() => {
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
       try {
         const parsedUser = JSON.parse(savedUser);
         setUser(parsedUser);
+        
+        // Check for active draft session
+        const savedSession = loadUserDraftSession();
+        if (savedSession) {
+          console.log('🔄 Found saved draft session, will attempt recovery when socket connects');
+          setSessionRecovery({
+            isAttempting: false,
+            session: savedSession,
+            message: 'Found active draft session. Connecting...',
+            error: null
+          });
+        }
       } catch (error) {
         console.error('Error parsing saved user:', error);
         localStorage.removeItem('currentUser');
       }
     }
   }, []);
+
+  // Handle session recovery when socket connects
+  useEffect(() => {
+    if (socket && sessionRecovery.session && !sessionRecovery.isAttempting) {
+      console.log('🔌 Socket connected, attempting session recovery');
+      handleSessionRecovery(sessionRecovery.session);
+    }
+  }, [socket, sessionRecovery.session, sessionRecovery.isAttempting, handleSessionRecovery]);
 
   // Socket connection management
   useEffect(() => {
@@ -180,6 +263,63 @@ const MainApp = () => {
           pingInterval: 25000 // 25 second ping interval
         });
         setSocket(newSocket);
+
+        // Notify server of user connection for session tracking
+        newSocket.on('connect', () => {
+          console.log('🔌 Socket connected, notifying server of user connection');
+          newSocket.emit('user-connect', {
+            userId: user.id,
+            username: user.username
+          });
+        });
+
+        // Session recovery event handlers
+        newSocket.on('session-recovery', (data) => {
+          console.log('🔄 Session recovery notification received:', data);
+          setSessionRecovery({
+            isAttempting: true,
+            session: data.session,
+            message: data.message,
+            error: null
+          });
+          
+          // Automatically attempt to recover the session
+          handleSessionRecovery(data.session);
+        });
+
+        newSocket.on('session-recovered', (data) => {
+          console.log('✅ Session recovered successfully:', data);
+          setSessionRecovery({
+            isAttempting: false,
+            session: null,
+            message: data.message,
+            error: null
+          });
+          
+          // Clear the recovery state after a delay
+          setTimeout(() => {
+            setSessionRecovery(prev => ({ ...prev, message: '' }));
+          }, 3000);
+        });
+
+        newSocket.on('session-recovery-error', (data) => {
+          console.log('❌ Session recovery failed:', data);
+          setSessionRecovery({
+            isAttempting: false,
+            session: null,
+            message: '',
+            error: data.message
+          });
+          
+          // Clear the error after a delay
+          setTimeout(() => {
+            setSessionRecovery(prev => ({ ...prev, error: null }));
+          }, 5000);
+        });
+
+        newSocket.on('session-saved', (data) => {
+          console.log('💾 Session saved confirmation:', data);
+        });
 
         // Listen for draft state updates
         newSocket.on('draft-state', (state) => {
@@ -333,6 +473,9 @@ const MainApp = () => {
         console.log('🏁 Draft completed, updating draft state');
         setIsDraftComplete(true);
         setDraftState(draftState);
+        
+        // Clear user session since draft is completed
+        clearUserDraftSession();
         
         // Update draft status in localStorage
         const savedDrafts = JSON.parse(localStorage.getItem('drafts') || '[]');
@@ -668,6 +811,12 @@ const MainApp = () => {
         socket.emit('join-draft', { draftId: config.id, user: user });
         console.log('✅ join-draft event emitted successfully');
         
+        // Save user session for reconnection
+        const teamAssignment = teamAssignments.find(team => 
+          team.owner === user.username || team.ownerId === user.id
+        );
+        saveUserDraftSession(config.id, user, teamAssignment);
+        
         // Transition to draft view
         setAppView('draft');
         
@@ -839,11 +988,39 @@ const MainApp = () => {
           onJoinDraft={handleJoinDraft}
           onCreateDraft={handleCreateDraft}
           onLogout={handleLogout}
+          sessionRecovery={sessionRecovery}
+          onManualRecovery={handleSessionRecovery}
         />
         <ConnectionStatus 
           serverStatus={serverStatus} 
           onRetry={handleRetryConnection}
         />
+        
+        {/* Session Recovery Notifications */}
+        {sessionRecovery.isAttempting && (
+          <div className="fixed top-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              <span>Reconnecting to your draft...</span>
+            </div>
+          </div>
+        )}
+        
+        {sessionRecovery.message && !sessionRecovery.isAttempting && (
+          <div className="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+            <div className="flex items-center space-x-2">
+              <span>✅ {sessionRecovery.message}</span>
+            </div>
+          </div>
+        )}
+        
+        {sessionRecovery.error && (
+          <div className="fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+            <div className="flex items-center space-x-2">
+              <span>❌ {sessionRecovery.error}</span>
+            </div>
+          </div>
+        )}
       </>
     );
   }
@@ -915,6 +1092,32 @@ const MainApp = () => {
             }}
           />
         )}
+        
+        {/* Session Recovery Notifications */}
+        {sessionRecovery.isAttempting && (
+          <div className="fixed top-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              <span>Reconnecting to your draft...</span>
+            </div>
+          </div>
+        )}
+        
+        {sessionRecovery.message && !sessionRecovery.isAttempting && (
+          <div className="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+            <div className="flex items-center space-x-2">
+              <span>✅ {sessionRecovery.message}</span>
+            </div>
+          </div>
+        )}
+        
+        {sessionRecovery.error && (
+          <div className="fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+            <div className="flex items-center space-x-2">
+              <span>❌ {sessionRecovery.error}</span>
+            </div>
+          </div>
+        )}
       </>
     );
   }
@@ -940,6 +1143,32 @@ const MainApp = () => {
             onClose={() => setShowPickAnnouncement(false)}
             socket={socket}
           />
+        )}
+        
+        {/* Session Recovery Notifications */}
+        {sessionRecovery.isAttempting && (
+          <div className="fixed top-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              <span>Reconnecting to your draft...</span>
+            </div>
+          </div>
+        )}
+        
+        {sessionRecovery.message && !sessionRecovery.isAttempting && (
+          <div className="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+            <div className="flex items-center space-x-2">
+              <span>✅ {sessionRecovery.message}</span>
+            </div>
+          </div>
+        )}
+        
+        {sessionRecovery.error && (
+          <div className="fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+            <div className="flex items-center space-x-2">
+              <span>❌ {sessionRecovery.error}</span>
+            </div>
+          </div>
         )}
       </>
     );
