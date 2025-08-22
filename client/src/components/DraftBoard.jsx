@@ -80,7 +80,7 @@ const DraftBoard = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 draft-board">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <div className="text-sm text-gray-400 text-center sm:text-left">
           Full draft results - {draftState?.pickHistory?.length || 0} picks made
@@ -127,21 +127,25 @@ const DraftBoard = ({
       {/* Draft Board Grid */}
       <div className="bg-gray-800 rounded-lg p-4 overflow-x-auto">
         <div 
-          className="min-w-full grid"
+          className="min-w-full grid draft-grid"
           style={{ 
             gridTemplateColumns: `80px repeat(${totalTeams}, 1fr)`, 
             gap: '4px',
             transform: `scale(${zoomLevel})`, 
-            transformOrigin: 'top left' 
+            transformOrigin: 'top left',
+            // Ensure minimum cell sizes for better image generation
+            minWidth: `${80 + (totalTeams * 120)}px`
           }}
         >
-                     {/* Header row with team names */}
-           <div className="font-semibold text-sm text-gray-300 p-2 text-center bg-gray-700 rounded">Round</div>
-           {teams.map((team) => (
-             <div key={team.id} className="font-semibold text-xs text-gray-300 p-2 text-center bg-gray-700 rounded">
-               {team.name}
-             </div>
-           ))}
+          {/* Header row with team names */}
+          <div className="font-semibold text-sm text-gray-300 p-2 text-center bg-gray-700 rounded" style={{ minHeight: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            Round
+          </div>
+          {teams.map((team) => (
+            <div key={team.id} className="font-semibold text-xs text-gray-300 p-2 text-center bg-gray-700 rounded" style={{ minHeight: '50px', minWidth: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {team.name}
+            </div>
+          ))}
 
           {/* Draft rounds - just showing pick numbers for now */}
           {Array.from({ length: totalRounds }, (_, roundIndex) => {
@@ -149,10 +153,10 @@ const DraftBoard = ({
             
             return (
               <React.Fragment key={round}>
-                                 {/* Round number */}
-                 <div className="font-medium text-sm text-gray-300 p-2 text-center bg-gray-700 rounded">
-                   {round}
-                 </div>
+                {/* Round number */}
+                <div className="font-medium text-sm text-gray-300 p-2 text-center bg-gray-700 rounded" style={{ minHeight: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {round}
+                </div>
                 
                 {/* Pick numbers for this round */}
                 {Array.from({ length: totalTeams }, (_, columnIndex) => {
@@ -186,40 +190,44 @@ const DraftBoard = ({
                   console.log(`Round ${round}, Column ${columnIndex}: Pick ${pickNumber}, Team ${teamId}, PickIndex ${pickIndex}, Player: ${player?.player_name || 'none'}`);
                   
                   return (
-                                         <div
-                       key={`${round}-${columnIndex}`}
-                       className={`p-2 text-center rounded border min-h-[3rem] flex items-center justify-center relative ${
-                         player ? getPositionColor(player.position) : 'bg-gray-700 border-gray-600'
-                       } ${isCurrent ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}
-                     >
+                    <div
+                      key={`${round}-${columnIndex}`}
+                      className={`p-2 text-center rounded border min-h-[3rem] flex items-center justify-center relative ${
+                        player ? getPositionColor(player.position) : 'bg-gray-700 border-gray-600'
+                      } ${isCurrent ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}
+                      style={{
+                        minHeight: '60px',
+                        minWidth: '120px'
+                      }}
+                    >
                       {/* Pick number overlay */}
                       <div className="absolute top-1 left-1 text-xs text-gray-400 font-mono font-bold">
                         {pickNumber}
                       </div>
                       
-                                             {player ? (
-                         <div className="w-full">
-                           <div className="font-medium text-white truncate mb-1">
-                             {player.player_name}
-                           </div>
-                           <div className="flex items-center justify-center gap-1">
-                             <span className="px-1.5 py-0.5 rounded text-xs font-semibold bg-black/30 text-white">
-                               {player.position}
-                             </span>
-                             <span className="text-gray-300 text-xs">
-                               {player.team}
-                             </span>
-                           </div>
-                         </div>
-                       ) : isCurrent ? (
-                         <div className="text-blue-400 font-medium">
-                           On Clock
-                         </div>
-                       ) : (
-                         <div className="text-gray-500 font-mono text-xs">
-                           {pickNumber}
-                         </div>
-                       )}
+                      {player ? (
+                        <div className="w-full">
+                          <div className="font-medium text-white truncate mb-1 text-sm leading-tight">
+                            {player.player_name}
+                          </div>
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="px-1.5 py-0.5 rounded text-xs font-semibold bg-black/30 text-white">
+                              {player.position}
+                            </span>
+                            <span className="text-gray-300 text-xs">
+                              {player.team}
+                            </span>
+                          </div>
+                        </div>
+                      ) : isCurrent ? (
+                        <div className="text-blue-400 font-medium text-sm">
+                          On Clock
+                        </div>
+                      ) : (
+                        <div className="text-gray-500 font-mono text-xs">
+                          {pickNumber}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

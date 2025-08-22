@@ -106,3 +106,86 @@
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
 }
+
+/* Draft Board Image Generation Styles */
+.draft-board {
+  /* Ensure consistent rendering for image generation */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.4;
+}
+
+.draft-grid {
+  /* Ensure grid renders properly for image capture */
+  display: grid;
+  grid-gap: 4px;
+  align-items: stretch;
+}
+
+/* Optimize text rendering for image generation */
+.draft-board * {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure cells maintain proper aspect ratio for image generation */
+.draft-grid > div {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  word-wrap: break-word;
+  overflow: hidden;
+}
+
+/* Hide zoom controls during image generation */
+.draft-board .zoom-controls {
+  /* Keep visible for normal use, but can be hidden for image generation if needed */
+}
+
+/* Ensure proper contrast for image generation */
+.draft-board .bg-gray-700 {
+  background-color: #374151 !important;
+}
+
+.draft-board .bg-gray-800 {
+  background-color: #1f2937 !important;
+}
+
+.draft-board .text-gray-300 {
+  color: #d1d5db !important;
+}
+
+.draft-board .text-gray-400 {
+  color: #9ca3af !important;
+}
+
+.draft-board .text-gray-500 {
+  color: #6b7280 !important;
+}
+
+/* Position-specific colors for better image contrast */
+.draft-board .bg-blue-600 {
+  background-color: #2563eb !important;
+}
+
+.draft-board .bg-green-600 {
+  background-color: #16a34a !important;
+}
+
+.draft-board .bg-purple-600 {
+  background-color: #9333ea !important;
+}
+
+.draft-board .bg-orange-600 {
+  background-color: #ea580c !important;
+}
+
+.draft-board .bg-yellow-600 {
+  background-color: #ca8a04 !important;
+}
+
+.draft-board .bg-red-600 {
+  background-color: #dc2626 !important;
+}

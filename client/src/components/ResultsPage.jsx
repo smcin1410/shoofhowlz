@@ -249,17 +249,47 @@ const ResultsPage = () => {
       // Find the draft board element more reliably
       const draftBoardElement = draftBoardRef.current.querySelector('.draft-board') || draftBoardRef.current;
       
-      // Generate the image directly from the visible element
+      // Calculate optimal dimensions for the entire draft
+      const totalTeams = draftState?.teams?.length || 12;
+      const totalRounds = draftState?.draftOrder ? Math.ceil(draftState.draftOrder.length / totalTeams) : 16;
+      
+      // Calculate optimal cell sizes based on content
+      const cellWidth = Math.max(120, 800 / totalTeams); // Minimum 120px, max 800px total width
+      const cellHeight = 80; // Fixed height for consistency
+      const headerHeight = 60;
+      const roundColumnWidth = 80;
+      
+      // Calculate total dimensions
+      const totalWidth = roundColumnWidth + (totalTeams * cellWidth);
+      const totalHeight = headerHeight + (totalRounds * cellHeight);
+      
+      console.log('📐 Calculated dimensions:', {
+        totalTeams,
+        totalRounds,
+        cellWidth,
+        cellHeight,
+        totalWidth,
+        totalHeight,
+        aspectRatio: totalWidth / totalHeight
+      });
+      
+      // Generate the image with optimized settings
       const canvas = await html2canvas(draftBoardElement, {
         backgroundColor: '#1f2937',
-        scale: 2, // Higher quality
+        scale: 2, // Higher quality for better text rendering
         useCORS: true,
         allowTaint: true,
         logging: false,
-        width: draftBoardElement.scrollWidth,
-        height: draftBoardElement.scrollHeight,
+        width: totalWidth,
+        height: totalHeight,
         scrollX: 0,
-        scrollY: 0
+        scrollY: 0,
+        // Ensure we capture the full content
+        foreignObjectRendering: true,
+        // Optimize for text rendering
+        imageTimeout: 0,
+        // Remove any clipping
+        removeContainer: true
       });
       
       // Convert to PNG and download
@@ -272,7 +302,12 @@ const ResultsPage = () => {
       link.click();
       document.body.removeChild(link);
       
-      console.log('✅ PNG generated successfully');
+      console.log('✅ PNG generated successfully with dimensions:', {
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        actualWidth: canvas.width / 2, // Account for scale factor
+        actualHeight: canvas.height / 2
+      });
       
     } catch (error) {
       console.error('Error generating PNG:', error);
@@ -413,11 +448,16 @@ const ResultsPage = () => {
           <div 
             ref={draftBoardRef}
             className="bg-gray-800 rounded-lg p-6 print-draft-board"
+            style={{
+              // Ensure proper sizing for image generation
+              minWidth: 'fit-content',
+              overflow: 'visible'
+            }}
           >
-                          <DraftBoard 
-                draftState={draftState} 
-                getPositionColor={getPositionColor}
-              />
+            <DraftBoard 
+              draftState={draftState} 
+              getPositionColor={getPositionColor}
+            />
           </div>
         )}
 
