@@ -1087,21 +1087,31 @@ io.on('connection', (socket) => {
   // Create draft
   socket.on('create-draft', (draftConfig) => {
     try {
+      console.log('🎉 RECEIVED create-draft event from client!');
       console.log('📝 Creating draft with config:', draftConfig);
+      console.log('🔍 Socket ID:', socket.id);
+      console.log('🔍 Draft ID:', draftConfig.id);
       
       // Generate a unique draft ID if not provided
       if (!draftConfig.id) {
         draftConfig.id = generateId();
+        console.log('🆔 Generated new draft ID:', draftConfig.id);
       }
       
       // Create draft state
       const draftState = createDraftState(draftConfig);
+      console.log('🏗️ Created draft state:', {
+        id: draftState.id,
+        leagueName: draftState.leagueName,
+        teams: draftState.teams?.length
+      });
       
       // Store in active drafts
       activeDrafts.set(draftConfig.id, draftState);
       
       console.log(`✅ Draft created with ID: ${draftConfig.id}`);
       console.log(`📊 Active drafts count: ${activeDrafts.size}`);
+      console.log(`📊 Active drafts keys: [${Array.from(activeDrafts.keys()).join(', ')}]`);
       
       // Broadcast draft created event
       io.to(`draft-${draftConfig.id}`).emit('draft-created', {
